@@ -28,7 +28,7 @@ function Financials({ company: c, facts }: { company: Company; facts: Fact[] }) 
   return <>
     <div className="metric-grid">{[
       ['Latest Revenue', money(c.latest_revenue, c.latest_year, c.currency), 'latest_revenue'],
-      ['Latest Profit', money(c.latest_profit, c.latest_year, c.currency), 'latest_profit'],
+      ['Annual Result', money(c.latest_profit, c.latest_year, c.currency), 'latest_profit'],
       ['Revenue Change', percent(c.revenue_growth), 'revenue_growth'],
     ].map(([name, value, field]) => <div className="metric" key={field}><p className="muted text-xs mb-2">{name}</p><div className="value break-words"><Display value={value} /></div><SourceButton company={c} facts={value === 'Not found' ? [] : evidence(c, facts, field)} /></div>)}</div>
     <figure className="mb-7 rounded-md border border-[#dde5e0] bg-white p-4 sm:p-5" aria-labelledby="financial-chart-title">
@@ -71,7 +71,7 @@ function Profile({ company: c, facts }: { company: Company; facts: Fact[] }) {
     identity && text(c.industry_text) ? `${title(c.legal_name) || 'The company'} works in ${text(c.industry_text)}${text(c.municipality) ? ` in ${title(c.municipality)}` : ''}.` : identity && text(c.municipality) ? `${title(c.legal_name) || 'The company'} is based in ${title(c.municipality)}.` : '',
     identity && number(c.employees) !== null ? `It has ${number(c.employees)} employees.` : '',
     financial && number(c.latest_revenue) !== null ? `Latest revenue was ${money(c.latest_revenue, c.latest_year, c.currency)}.` : '',
-    financial && number(c.latest_profit) !== null ? `Latest profit was ${money(c.latest_profit, c.latest_year, c.currency)}.` : '',
+    financial && number(c.latest_profit) !== null ? `Annual result was ${money(c.latest_profit, c.latest_year, c.currency)}.` : '',
     financial && number(c.revenue_growth) !== null ? `Revenue change was ${percent(c.revenue_growth)}.` : '',
     found(c, 'people') && text(c.ceo) ? `${title(c.ceo)} is CEO.` : '',
   ].filter(Boolean).join(' ');

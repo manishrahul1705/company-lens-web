@@ -17,7 +17,7 @@ const rows: Row[] = [
   { field: 'founded', label: 'Founded', category: 'identity' },
   { field: 'employees', label: 'Employees', category: 'identity' },
   { field: 'latest_revenue', label: 'Latest Revenue', category: 'financials' },
-  { field: 'latest_profit', label: 'Latest Profit', category: 'financials' },
+  { field: 'latest_profit', label: 'Annual Result', category: 'financials' },
   { field: 'revenue_growth', label: 'Revenue Change', category: 'financials' },
   { field: 'ceo', label: 'CEO', category: 'people' },
   { field: 'locations_count', label: 'Locations', category: 'locations' },
@@ -37,7 +37,8 @@ function ComparisonValue({ company, facts, row }: { company: Company; facts: Fac
     // Counts describe the same actual entries as the profile, never an unchecked stored total.
     value = entries.length;
     hasValue = true;
-    // A single item fact does not establish an aggregate count; do not mislabel it as count evidence.
+    // Show all contributing records so the derived count can be inspected.
+    sources = row.field === 'locations_count' ? locations(company, facts).flatMap(place => place.fact ? [place.fact] : evidence(company, facts, 'address')) : jobs(company, facts);
   } else if (row.field === 'latest_revenue' || row.field === 'latest_profit') {
     hasValue = number(raw) !== null;
     if (hasValue) value = money(raw, company.latest_year, company.currency);
@@ -107,7 +108,7 @@ export default function CompanyComparison() {
             : 'Add at least two companies to see their details side by side.'}</p>
         <button className="button" onClick={openSearch}>Find a Company</button>
       </section>}
-      {chosen.length > 0 && <div className="compare-grid" role="table" aria-label="Company Comparison" aria-rowcount={rows.length + 1} aria-colcount={chosen.length + 1}>
+      {chosen.length > 0 && <div className={`compare-grid compare-count-${chosen.length}`} role="table" aria-label="Company Comparison" aria-rowcount={rows.length + 1} aria-colcount={chosen.length + 1}>
         <div className="compare-row compare-header" role="row" style={columns}>
           <div className="compare-cell compare-label" role="columnheader" style={{ display: 'flex', alignItems: 'center' }}>Company Details</div>
           {chosen.map(company => <div className="compare-cell" role="columnheader" key={company.org_number}>
@@ -119,13 +120,10 @@ export default function CompanyComparison() {
         {rows.map(row => <div className="compare-row" role="row" key={row.field} style={columns}>
           <div className="compare-cell compare-label" role="rowheader" style={{ display: 'flex', alignItems: 'center' }}>{row.label}</div>
           {chosen.map(company => <div className="compare-cell" role="cell" key={company.org_number}>
-            <Link className="compare-company-name" href={companyHref(company)}>{title(company.legal_name) || company.org_number}</Link>
+            <Link className="compare-company-name" href={companyHref(company)}>{title(company.legal_name).split(/\s+/).slice(0, 2).join(' ') || company.org_number}</Link>
             <ComparisonValue company={company} facts={facts} row={row} />
           </div>)}
         </div>)}
-      </div>}
-      {chosen.length > 0 && <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12 }} aria-label="Selected Companies">
-        {chosen.map(company => <button className="button secondary" key={company.org_number} aria-label={`Remove ${title(company.legal_name) || company.org_number} from comparison`} onClick={() => toggle(company.org_number)}>Remove {title(company.legal_name) || company.org_number} ×</button>)}
       </div>}
     </>}
   </div>;
