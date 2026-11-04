@@ -1,4 +1,7 @@
 import "./globals.css"
+import { LensProvider } from '@/components/lens-provider';
+import { LensShell } from '@/components/lens-shell';
+export const metadata = { title: 'Nordic Company Lens', description: 'Look up Norwegian companies and trace the facts to their source.', icons: { icon: 'https://keystone.jboxai.com/project-assets/ohpazwitpsg6lbbg6r4u7w0q/bd19i6l7vvaujtqcj6vxuvx3/64aa2ebdcd8543e0f840701a7da3f5a989e30feb0d42661e57328395247d17a3/64aa2ebdcd8543e0.svg' } }; 
 
 export default function RootLayout({
   children,
@@ -8,7 +11,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
+        <LensProvider><LensShell>{children}</LensShell></LensProvider>
       </body>
     </html>
   )

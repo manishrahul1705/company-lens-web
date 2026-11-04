@@ -1,0 +1,28 @@
+{
+  "formatVersion": 1,
+  "assets": {
+    "lens-symbol": {
+      "id": "lens-symbol",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "64aa2ebdcd8543e0f840701a7da3f5a989e30feb0d42661e57328395247d17a3",
+      "source": "OpenRouter:recraft/recraft-v4.1-vector",
+      "altText": "Nordic Company Lens — original lens symbol",
+      "assetId": "bd19i6l7vvaujtqcj6vxuvx3",
+      "assetUrl": "https://keystone.jboxai.com/project-assets/ohpazwitpsg6lbbg6r4u7w0q/bd19i6l7vvaujtqcj6vxuvx3/64aa2ebdcd8543e0f840701a7da3f5a989e30feb0d42661e57328395247d17a3/64aa2ebdcd8543e0.svg",
+      "fileName": "Nordic Company Lens — original lens symbol",
+      "mimeType": "image/svg+xml",
+      "createdAt": "2026-11-04T05:16:41.238Z",
+      "sizeBytes": 2999,
+      "sourceUrl": "image-job://afd663xa2t2rmbt4ohzwj393",
+      "updatedAt": "2026-11-04T05:16:41.238Z",
+      "validated": false,
+      "previewUrl": "https://keystone.jboxai.com/project-assets/ohpazwitpsg6lbbg6r4u7w0q/pohvffedafv7asimbacp9zjm/16b33f9015349b6051e5bbbfbc4d8b3c9c09c2954cb7ff308dcd6629429f142c/16b33f9015349b60.webp",
+      "usageContext": "Generated image"
+    }
+  },
+  "legacyPaths": {},
+  "legacyBaseline": {
+    "app/favicon.ico": "2b8ad2d33455a8f736fc3a8ebf8f0bdea8848ad4c0db48a2833bd0f9cd775932"
+  }
+}
