@@ -3,7 +3,7 @@ import __withJboxAssets from "./jbox.asset-redirects.cjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  output: "standalone",
   trailingSlash: false,
   // Allow preview subdomains for Keystone preview system
   allowedDevOrigins: [
