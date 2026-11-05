@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import type { CSSProperties, ReactNode } from 'react';
+import {useRef,useState, type CSSProperties, type ReactNode} from 'react';
+import {ExportActions} from '@/components/export-actions';
 import {
   type Company, type Fact, companyHref, date, evidence, found, jobs,
   locations, money, number, percent, safeUrl, text, title,
@@ -78,48 +79,54 @@ function ComparisonValue({ company, facts, row }: { company: Company; facts: Fac
 }
 
 export default function CompanyComparison() {
-  const { companies, facts, loading, error, factsError, retry, selected, toggle, openSearch } = useLensData();
+  const { companies, facts, loading, error, selected, toggle, openSearch,t } = useLensData();
+  const [activeOrg,setActiveOrg]=useState('');
+  const touch=useRef<{x:number;y:number}|null>(null);
   // Resolve against current records so stale persisted selections never create invented columns.
-  const chosen = [...new Set(selected)].flatMap(org => {
+  const chosen = [...new Set(selected)].slice(0,3).flatMap(org => {
     const company = companies.find(c => c.org_number === org);
     return company ? [company] : [];
   });
+  const active=chosen.some(c=>c.org_number===activeOrg)?activeOrg:chosen[0]?.org_number;
+  const shareUrl='/compare?orgs='+chosen.map(c=>c.org_number).join(',');
+  const differs=(row:Row)=>new Set(chosen.map(c=>{if(!found(c,row.category))return text(c.sections[row.category]);if(row.field==='locations_count')return String(locations(c,facts).length);if(row.field==='jobs_count')return String(jobs(c,facts).length);return [text(c[row.field]),...(row.category==='financials'?[text(c.latest_year),text(c.currency)]:[])].join('|');})).size>1;
   const columns: CSSProperties = { gridTemplateColumns: `minmax(120px, .7fr) repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))` };
 
   return <div>
-    <Link className="back-link" href="/">← Company Search</Link>
+    <Link className="back-link" href="/">← {t('Company Search')}</Link>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
       <div>
-        <p className="eyebrow" style={{ marginBottom: 10 }}>Side by Side</p>
-        <h1 style={{ marginBottom: 8 }}>Compare Companies</h1>
-        <p className="muted" style={{ marginBottom: 0 }}>The same fields. A clearer perspective.</p>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>{t('Side by Side')}</p>
+        <h1 style={{ marginBottom: 8 }}>{t('Compare Companies')}</h1>
+        <p className="muted" style={{ marginBottom: 0 }}>{t('The same fields. A clearer perspective.')}</p>
       </div>
-      <button className="button secondary" onClick={openSearch}>+ Add Another Company</button>
+      <button className="button secondary" disabled={chosen.length>=3} onClick={openSearch}>+ {t('Add Another Company')}</button>
     </div>
 
     {loading || error ? <DataState /> : <>
+      {chosen.length>0&&<><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/><p className="muted">{t('Differences highlighted')}</p><div className="compare-tabs" role="group" aria-label={t('Compare Companies')}>{chosen.map(c=><button key={c.org_number} className={`button ${active===c.org_number?'selected':'secondary'}`} aria-pressed={active===c.org_number} onClick={()=>setActiveOrg(c.org_number)}>{title(c.legal_name)||c.org_number}</button>)}</div></>}
       
       {chosen.length < 2 && <section className="empty-state" style={{ padding: '24px 20px', marginBottom: 24 }} aria-labelledby="compare-guidance">
-        <h2 id="compare-guidance" style={{ fontSize: 20, marginBottom: 8 }}>{chosen.length ? 'Choose One More Company' : 'Choose Companies to Compare'}</h2>
-        <p style={{ marginBottom: 16 }}>{companies.length === 0
+        <h2 id="compare-guidance" style={{ fontSize: 20, marginBottom: 8 }}>{t(chosen.length ? 'Choose One More Company' : 'Choose Companies to Compare')}</h2>
+        <p style={{ marginBottom: 16 }}>{t(companies.length === 0
           ? 'There are no companies in the directory yet. Comparison needs at least two companies.'
           : companies.length === 1
             ? 'Comparison needs at least two companies. Only one company is currently available in the directory.'
-            : 'Add at least two companies to see their details side by side.'}</p>
-        <button className="button" onClick={openSearch}>Find a Company</button>
+            : 'Add at least two companies to see their details side by side.')}</p>
+        <button className="button" onClick={openSearch}>{t('Find a Company')}</button>
       </section>}
-      {chosen.length > 0 && <div className={`compare-grid compare-count-${chosen.length}`} role="table" aria-label="Company Comparison" aria-rowcount={rows.length + 1} aria-colcount={chosen.length + 1}>
+      {chosen.length > 0 && <div className={`compare-grid compare-count-${chosen.length}`} onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchCancel={()=>{touch.current=null;}} onTouchEnd={e=>{if(!touch.current||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-touch.current.x,dy=e.changedTouches[0].clientY-touch.current.y;touch.current=null;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){const index=chosen.findIndex(c=>c.org_number===active);setActiveOrg(chosen[Math.max(0,Math.min(chosen.length-1,index+(dx<0?1:-1)))].org_number);}}} role="table" aria-label={t('Company Comparison')} aria-rowcount={rows.length + 1} aria-colcount={chosen.length + 1}>
         <div className="compare-row compare-header" role="row" style={columns}>
-          <div className="compare-cell compare-label" role="columnheader" style={{ display: 'flex', alignItems: 'center' }}>Company Details</div>
-          {chosen.map(company => <div className="compare-cell" role="columnheader" key={company.org_number}>
+          <div className="compare-cell compare-label" role="columnheader" style={{ display: 'flex', alignItems: 'center' }}>{t('Company Details')}</div>
+          {chosen.map(company => <div className={`compare-cell compare-company-column ${active===company.org_number?'is-active':''}`} role="columnheader" key={company.org_number}>
             <Link href={companyHref(company)} style={{ display: 'block', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none', paddingTop: 4 }}>{title(company.legal_name) || company.org_number}</Link>
             <span className="muted" style={{ display: 'block', fontSize: 11 }}>Org. {company.org_number}</span>
-            <button className="button text" style={{ fontSize: 11, minHeight: 44, paddingTop: 4, paddingBottom: 4 }} aria-label={`Remove ${title(company.legal_name) || company.org_number} from comparison`} onClick={() => toggle(company.org_number)}>Remove ×</button>
+            <button className="button text" style={{ fontSize: 11, minHeight: 44, paddingTop: 4, paddingBottom: 4 }} aria-label={`${t('Remove')} ${title(company.legal_name) || company.org_number}`} onClick={() => toggle(company.org_number)}>{t('Remove')} ×</button>
           </div>)}
         </div>
-        {rows.map(row => <div className="compare-row" role="row" key={row.field} style={columns}>
-          <div className="compare-cell compare-label" role="rowheader" style={{ display: 'flex', alignItems: 'center' }}>{row.label}</div>
-          {chosen.map(company => <div className="compare-cell" role="cell" key={company.org_number}>
+        {rows.map(row => <div className={`compare-row ${differs(row)?'compare-different':''}`} role="row" key={row.field} style={columns}>
+          <div className="compare-cell compare-label" role="rowheader" style={{ display: 'flex', alignItems: 'center' }}>{t(row.label)}</div>
+          {chosen.map(company => <div className={`compare-cell compare-company-column ${active===company.org_number?'is-active':''}`} role="cell" key={company.org_number}>
             <Link className="compare-company-name" href={companyHref(company)}>{title(company.legal_name).split(/\s+/).slice(0, 2).join(' ') || company.org_number}</Link>
             <ComparisonValue company={company} facts={facts} row={row} />
           </div>)}
