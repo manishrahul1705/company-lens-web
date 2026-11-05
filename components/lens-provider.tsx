@@ -1,0 +1,12 @@
+'use client';
+import {createContext,useContext,useEffect,useState,useCallback, type ReactNode} from 'react';
+import {Company,Fact,parseCompanies,parseFacts} from '@/lib/lens-data';
+type State={companies:Company[];facts:Fact[];loading:boolean;error:string;factsError:string;retry:()=>void;selected:string[];toggle:(org:string)=>void;openSearch:()=>void;searchOpen:boolean;closeSearch:()=>void;source:{company:Company;facts:Fact[]}|null;openSource:(company:Company,facts:Fact[])=>void;closeSource:()=>void};
+const Context=createContext<State|null>(null);
+export function LensProvider({children}:{children:ReactNode}) { const [companies,setCompanies]=useState<Company[]>([]),[facts,setFacts]=useState<Fact[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[factsError,setFactsError]=useState(''),[selected,setSelected]=useState<string[]>([]),[searchOpen,setSearch]=useState(false),[source,setSource]=useState<State['source']>(null),[ready,setReady]=useState(false);
+const load=useCallback(async()=>{setLoading(true);setError('');setFactsError('');const read=async(path:string)=>{const r=await fetch(path);if(!r.ok)throw new Error('Unable to load');return r.json();}; await Promise.all([read('/data/companies.json').then(parseCompanies).then(setCompanies).catch(()=>setError('Company records could not be loaded. Please try again.')),read('/data/facts.json').then(parseFacts).then(setFacts).catch(()=>{setFacts([]);setFactsError('Evidence could not be loaded. Please try again.');})]);setLoading(false);},[]);
+useEffect(()=>{load();try{const v=JSON.parse(localStorage.getItem('ncl-compare')||'[]');if(Array.isArray(v))setSelected(v.filter(x=>typeof x==='string'));}catch{}setReady(true);},[load]);
+useEffect(()=>{if(ready)try{localStorage.setItem('ncl-compare',JSON.stringify(selected));}catch{}},[selected,ready]);
+useEffect(()=>{if(!loading&&!error)setSelected(prev=>prev.filter(id=>companies.some(c=>c.org_number===id)));},[companies,loading,error]);
+return <Context.Provider value={{companies,facts,loading,error,factsError,retry:load,selected,toggle:org=>setSelected(prev=>prev.includes(org)?prev.filter(x=>x!==org):[...prev,org]),openSearch:()=>setSearch(true),searchOpen,closeSearch:()=>setSearch(false),source,openSource:(company,facts)=>{if(facts.length)setSource({company,facts});},closeSource:()=>setSource(null)}}>{children}</Context.Provider>; }
+export function useLensData(){const v=useContext(Context);if(!v)throw new Error('LensProvider required');return v;}
