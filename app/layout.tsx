@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
       <body>
-        <Suspense fallback={<main aria-label="Loading"><div className="container skeleton-state"><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/></div></main>}><LensProvider><LensShell>{children}</LensShell></LensProvider></Suspense>
+        <Suspense fallback={<><header className="site-header"><div className="container header-inner"><a href="/" className="brand">Nordic Company Lens</a><nav className="nav-links"><a href="/compare">Compare</a></nav></div></header><main aria-label="Loading" aria-busy="true"><div className="container skeleton-state"><label className="search-field home-search"><span className="sr-only">Search companies</span><input placeholder="Search by name, org. number, town or industry" aria-label="Search companies" readOnly/></label><div role="status"><span className="sr-only">Loading company records</span><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/></div></div></main></>}><LensProvider><LensShell>{children}</LensShell></LensProvider></Suspense>
       </body>
     </html>
   )
