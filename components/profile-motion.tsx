@@ -13,15 +13,16 @@ export function CountUp({value,formatted,format}:{value:number;formatted:string;
     if(!element)return;
     let frame=0;
     const motion=matchMedia('(prefers-reduced-motion: reduce)');
-    const finish=()=>{cancelAnimationFrame(frame);setDisplay(formatted);};
+    const finish=()=>{cancelAnimationFrame(frame);element.getAnimations().forEach(animation=>animation.cancel());setDisplay(formatted);};
     // Keep static final values for reduced motion and older/embedded browsers.
-    if(motion.matches||!('IntersectionObserver' in window)){finish();return;}
+    if(motion.matches||matchMedia('(hover: none), (pointer: coarse)').matches||!('IntersectionObserver' in window)){finish();return;}
     let stopped=false;
     const stop=()=>{stopped=true;finish();};
     const observer=new IntersectionObserver(entries=>{
       if(!entries.some(entry=>entry.isIntersecting))return;
       observer.disconnect();
       if(motion.matches||stopped){finish();return;}
+      element.animate([{transform:'perspective(900px) rotateX(18deg)',opacity:.5},{transform:'none',opacity:1}],{duration:850,easing:'ease-out'});
       const start=performance.now();
       const tick=(now:number)=>{if(stopped||motion.matches){finish();return;}const progress=Math.min((now-start)/850,1);setDisplay(formatter.current(value*(1-Math.pow(1-progress,3))));if(progress<1)frame=requestAnimationFrame(tick);else finish();};
       frame=requestAnimationFrame(tick);
@@ -30,7 +31,7 @@ export function CountUp({value,formatted,format}:{value:number;formatted:string;
     motion.addEventListener('change',stop);
     return()=>{observer.disconnect();cancelAnimationFrame(frame);motion.removeEventListener('change',stop);};
   },[value,formatted]);
-  return <span ref={ref}><span className="sr-only">{formatted}</span><span aria-hidden="true">{display}</span></span>;
+  return <span ref={ref} className="motion-count"><span className="sr-only">{formatted}</span><span aria-hidden="true">{display}</span></span>;
 }
 
 export function useProfileSections(companyId:string,language:string) {
