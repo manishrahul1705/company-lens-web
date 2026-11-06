@@ -1,8 +1,13 @@
-/* Theme contract: explicit class overrides system, set by the prepaint script. */
-:root{color-scheme:light;--raised:#f0f3ec;--gold:#8c692b;--ring:#087451;--rule:var(--border)}
+/* Theme contract: Light by default, saved Light/Dark applied before paint. */
+:root{color-scheme:light;--raised:#f0f3ec;--gold:#C9A86A;--ring:#087451;--rule:var(--border)}
+body :is(p,span,dd,dt,li,td,th,button,input,select,summary,small,code),body h3{font-family:var(--font-ui),Arial,sans-serif}
+body :is(h1,h2),body .company-name,body .lens-card-heading h2{font-family:var(--font-editorial),Georgia,serif}
+body .ledger-figures dd,body .company-monogram,body .profile-hero-avatar{font-family:var(--font-ui),Arial,sans-serif}
+.profile-title-row h1 .profile-sourced-value{font-family:inherit}
+
 html.dark{color-scheme:dark;--background:#0B1714;--foreground:#EDE7DA;--card:#12231F;--card-foreground:#EDE7DA;--popover:#183029;--popover-foreground:#EDE7DA;--raised:#183029;--border:#24413A;--input:#24413A;--rule:#24413A;--muted:#183029;--muted-foreground:#A9B5AE;--primary:#3DBE8B;--primary-foreground:#0B1714;--secondary:#183029;--secondary-foreground:#EDE7DA;--accent:#183029;--accent-foreground:#EDE7DA;--ring:#3DBE8B;--gold:#D9B877;--chart-1:#3DBE8B;--chart-2:#D9B877;--chart-3:#A9B5AE;--chart-4:#7ECBA8;--chart-5:#DB9B91;--sidebar:#12231F;--sidebar-foreground:#EDE7DA;--sidebar-border:#24413A;--destructive:#f1a09a}
 .theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 10px;background:var(--card);color:var(--foreground);border:1px solid var(--border);border-radius:10px;font-size:12px;white-space:nowrap}
-.theme-glyph{display:inline-grid;width:18px;height:18px}.theme-glyph svg{grid-area:1/1;transition:transform .3s ease,opacity .3s ease}.theme-moon{opacity:0;transform:rotate(-70deg) scale(.6)}.theme-dark .theme-sun{opacity:0;transform:rotate(70deg) scale(.6)}.theme-dark .theme-moon{opacity:1;transform:rotate(0) scale(1)}.dark .theme-system .theme-sun{opacity:0;transform:rotate(70deg)}.dark .theme-system .theme-moon{opacity:1;transform:rotate(0)}
+.theme-glyph{display:inline-grid;width:18px;height:18px}.theme-glyph svg{grid-area:1/1;transition:transform .3s ease,opacity .3s ease}.theme-moon{opacity:0;transform:rotate(-70deg) scale(.6)}.theme-dark .theme-sun{opacity:0;transform:rotate(70deg) scale(.6)}.theme-dark .theme-moon{opacity:1;transform:rotate(0) scale(1)}
 :is(a,button,input,select,textarea,summary):focus-visible{outline:2px solid var(--ring);outline-offset:4px}
 .dark body{background:var(--background);color:var(--foreground)}
 .dark :is(.site-header,.result-card,.metric,.coverage,.empty-state,.compare-grid,.compare-tray,dialog,.dialog-body,.search-field,.filter-popover,.home-suggestions,.profile-sidebar-card,.coverage-segment,.financial-chart,.profile-top-facts,.sparkline-card,.profile-sparkline,.section-chips a,.journey-strip,.link-toast,.bg-white){background:var(--card)!important;color:var(--foreground)!important;border-color:var(--border)!important}

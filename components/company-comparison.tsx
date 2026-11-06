@@ -38,7 +38,7 @@ function ComparisonValue({ company, facts, row }: { company: Company; facts: Fac
   if (row.field === 'locations_count' || row.field === 'jobs_count') {
     const entries = row.field === 'locations_count' ? locations(company, facts) : jobs(company, facts);
     // Counts describe the same actual entries as the profile, never an unchecked stored total.
-    value = entries.length;
+    value = entries.length.toLocaleString('en-US');
     hasValue = true;
     // Show all contributing records so the derived count can be inspected.
     sources = row.field === 'locations_count' ? locations(company, facts).flatMap(place => place.fact ? [place.fact] : evidence(company, facts, 'address')) : jobs(company, facts);
