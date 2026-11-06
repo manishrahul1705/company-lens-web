@@ -174,7 +174,10 @@ function Profile({ company: c, facts }: { company: Company; facts: Fact[] }) {
   const website = found(c, 'website') ? safeUrl(c.website) : '';
   const places = locations(c, facts);
   const workplaceFacts = companyFacts(c,facts,'identity').filter(f => text(f.field).toLowerCase() === 'registered workplaces (count)' && /^\d+$/.test(text(f.value)));
-  const workplaceCount = workplaceFacts[0] ? text(workplaceFacts[0].value) : '';
+  // Count facts may store numeric strings; the shared number()/integer()
+  // helpers intentionally accept numbers only. Convert after validating above.
+  const parsedWorkplaceCount = workplaceFacts[0] ? Number(text(workplaceFacts[0].value)) : null;
+  const workplaceCount = parsedWorkplaceCount !== null && Number.isSafeInteger(parsedWorkplaceCount) ? parsedWorkplaceCount : null;
   const ads = jobs(c, facts);
   const news = companyFacts(c, facts, 'news').filter(f => text(f.value)).sort((a, b) => {
     const timestamp = (v: unknown) => { const n = Date.parse(text(v)); return Number.isFinite(n) ? n : -Infinity; };
@@ -198,7 +201,7 @@ function Profile({ company: c, facts }: { company: Company; facts: Fact[] }) {
         <span className="profile-identity-pill">{sourced(`Org. ${c.org_number}`,identitySources('org_number'),t('Organisation Number'))}</span>
         {identity && text(c.legal_form) && <span className="profile-identity-pill">{sourced(text(c.legal_form),identitySources('legal_form'),t('Legal Form'))}</span>}
         {text(c.status)&&!['not found','unknown','unavailable','not_available','n/a','null','undefined'].includes(text(c.status).toLowerCase())&&<span className="profile-identity-pill">{t('Status')}: {sourced(text(c.status),identitySources('status'),t('Status'))}</span>}
-        {workplaceCount && <span className="profile-identity-pill">{local('Registered workplaces','Registrerte arbeidssteder')}: {sourced(integer(workplaceCount),workplaceFacts,local('Registered workplaces','Registrerte arbeidssteder'))}</span>}
+        {workplaceCount !== null && <span className="profile-identity-pill">{local('Registered workplaces','Registrerte arbeidssteder')}: {sourced(integer(workplaceCount),workplaceFacts,local('Registered workplaces','Registrerte arbeidssteder'))}</span>}
         {website && <span className="profile-identity-pill"><a href={website} target="_blank" rel="noopener noreferrer" aria-label={local('Visit website','Besøk nettsted')}>{t('Website')} <ArrowIcon direction="external"/></a></span>}
       </div>
       {heroSummary&&<p className="profile-hero-summary">{heroSummary}</p>}
