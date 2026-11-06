@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect,useRef,useState, type CSSProperties, type ReactNode} from 'react';
+import {useEffect,useState, type CSSProperties, type ReactNode} from 'react';
 import {ArrowIcon} from '@/components/arrow-icon';
-import {ExportActions} from '@/components/export-actions';
+import {CopyLink,ExportActions} from '@/components/export-actions';
 import {
   type Company, type Fact, companyHref, date, evidence, financialFact, found, jobs,
   locations, money, number, percent, safeUrl, text, title,
@@ -69,7 +69,7 @@ function ComparisonValue({ company, facts, row, scale }: { company: Company; fac
     const description = text(company.industry_text_en) || text(raw);
     const code = text(company.industry_code);
     hasValue = !!(description || code);
-    if (hasValue) value = <>{description || code}{text(company.industry_text_en) && text(raw) && <small className="muted" lang="nb" style={{display:'block'}}>{text(raw)}</small>}{description && code ? <span className="muted" style={{ display: 'block', fontSize: 11 }}>{code}</span> : null}</>;
+    if (hasValue) value = description || code;
   } else {
     hasValue = !!text(raw);
     if (hasValue) value = row.field === 'founded' ? date(raw) : row.field === 'municipality' || row.field === 'ceo' ? title(raw) : text(raw);
@@ -87,7 +87,7 @@ function ComparisonValue({ company, facts, row, scale }: { company: Company; fac
   const amount = number(raw);
   const numeric = row.category==='financials' && amount!==null;
   return <div className={styles.valueBlock}><div className={styles.valueLine}>
-    <span className={numeric?styles.numeric:styles.value} title={numeric ? (row.metric?money(raw,company.latest_year,company.currency):percent(raw)) : undefined}>{value}</span>
+    <span className={numeric?styles.numeric:styles.value} title={numeric ? (row.metric?money(raw,company.latest_year,company.currency):percent(raw)) : row.field==='industry_text' ? text(company.industry_text_en)||text(raw) : text(raw)}>{value}</span>
     <DocumentSource company={company} facts={sources}/>
   </div>{numeric && scale && <FinancialBar value={amount!} scale={scale}/>}</div>;
 }
@@ -100,28 +100,28 @@ function rowNumber(c:Company,facts:Fact[],row:Row){return row.metric?number(fina
 export default function CompanyComparison() {
   const { companies, facts, loading, error, selected, toggle, openSearch,t,language } = useLensData();
   const [onlyDifferences,setOnlyDifferences]=useState(false);
-  const [activeOrg,setActiveOrg]=useState('');
+
   const [backHref,setBackHref]=useState('/');
   useEffect(()=>{try{const saved=sessionStorage.getItem('ncl-search-url');if(saved && (saved==='/' || saved.startsWith('/?')))setBackHref(saved);}catch{}},[]);
-  const tabs=useRef<HTMLDivElement>(null);
-  useEffect(()=>{const button=tabs.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');button?.scrollIntoView({block:'nearest',inline:'nearest'});},[activeOrg]);
-  const touch=useRef<{x:number;y:number}|null>(null);
+
   // Resolve against current records so stale persisted selections never create invented columns.
   const chosen = [...new Set(selected)].slice(0,3).flatMap(org => {
     const company = companies.find(c => c.org_number === org);
     return company ? [company] : [];
   });
   const scales = Object.fromEntries(rows.filter(r=>r.category==='financials').map(row=>{const values=chosen.flatMap(c=>{const n=rowNumber(c,facts,row);return n===null?[]:[n];});return [row.field,{min:Math.min(0,...values),max:Math.max(0,...values)}];}));
-  const active=chosen.some(c=>c.org_number===activeOrg)?activeOrg:chosen[0]?.org_number;
+
   const shareUrl='/compare?orgs='+chosen.map(c=>c.org_number).join(',');
   const differs=(row:Row)=>new Set(chosen.map(c=>{if(!found(c,row.category))return text(c.sections[row.category]);if(row.field==='locations_count')return String(locations(c,facts).length);if(row.field==='jobs_count')return String(jobs(c,facts).length);if(row.category==='financials')return [rowNumber(c,facts,row),text(c.latest_year),text(c.currency)].join('|');if(row.field==='social'||row.field==='news')return facts.filter(f=>f.org_number===c.org_number&&f.category===row.category).map(f=>text(f.value)).join('|');return text(c[row.field]);})).size>1;
   const visibleRows = onlyDifferences ? rows.filter(differs) : rows;
   // Parent stylesheet switches this shared desktop track definition to labelled mobile values.
-  const columns = { '--compare-columns': `200px repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))` } as CSSProperties;
+  const columns = { '--compare-columns': `200px repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))`, '--company-count': Math.max(chosen.length,1) } as CSSProperties;
+  const colour=(index:number)=>['#527a9a','#9a7061','#658674'][index];
+  const headlines=[rows[6],rows[8],rows[4]];
 
   return <div className={styles.page} style={columns}>
     <Link className="back-link" href={backHref}><ArrowIcon direction="left"/> {t('Company Search')}</Link>
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
+    <div style={{ display: 'grid', gap: 16, marginBottom: 24 }}>
       <div>
         <p className="eyebrow" style={{ marginBottom: 10 }}>{t('Side by Side')}</p>
         <h1 style={{ marginBottom: 8 }}>{t('Compare Companies')}</h1>
@@ -129,29 +129,30 @@ export default function CompanyComparison() {
       </div>
     </div>
 
-    <div className="compare-toolbar" role="group" aria-label={language==='no'?'Sammenligningsverktøy':'Comparison tools'}>
+    {!loading&&!error&&chosen.length>0&&<div className={styles.hero}>{chosen.map((company,index)=><div className={styles.contender} key={company.org_number}>{index>0&&<span className={styles.vs}>VS</span>}<article className={styles.heroCard} style={{'--avatar-colour':colour(index)} as CSSProperties}>
+      <div className={styles.band}><span className={styles.avatar}>{text(company.legal_name).slice(0,1)}</span><button className={styles.remove} aria-label={`${t('Remove')} ${title(company.legal_name)}`} onClick={()=>toggle(company.org_number)}>×</button></div>
+      <div className={styles.heroBody}><Link className={styles.heroName} href={companyHref(company)}>{title(company.legal_name)||company.org_number}</Link><p className={styles.meta}>{company.org_number} · {text(company.legal_form)||'—'} · {title(company.municipality)||'—'}</p><p className={styles.industry}>{text(company.industry_text_en)||text(company.industry_text)||'—'}</p>
+      <div className={styles.stats}>{headlines.map(row=>{const n=rowNumber(company,facts,row);const values=chosen.map(c=>rowNumber(c,facts,row));const winner=n!==null&&(!row.metric||new Set(chosen.map(c=>text(c.currency)||'NOK')).size===1)&&chosen.length>1&&values.every(v=>v!==null)&&values.every((v,i)=>i===index||n>v!);return <div className={styles.stat} key={row.field}><span>{t(row.label)}</span><strong>{n===null?'—':row.metric?compactMoney(n,company.currency):new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:2}).format(n)}</strong><small>{text(company.latest_year)||'—'} {winner&&<span className={styles.winner}>↑ {language==='no'?'høyere':'higher'}</span>}</small></div>;})}</div></div>
+    </article></div>)}</div>}
+    <div className={styles.toolbar} role="group" aria-label={language==='no'?'Sammenligningsverktøy':'Comparison tools'}>
       <button className="button secondary" disabled={loading||chosen.length>=3} onClick={openSearch}>+ {language==='no'?'Legg til selskap':'Add company'}</button>
-      <label className="check-filter"><input type="checkbox" disabled={loading||!chosen.length} checked={onlyDifferences} onChange={e=>setOnlyDifferences(e.target.checked)}/>{language==='no' ? 'Vis bare forskjeller' : 'Show only differences'}</label>
-      {!loading&&!error&&chosen.length>0&&<><span className="muted compare-field-count" aria-live="polite">{visibleRows.length} {language==='no' ? 'felt' : 'fields'}</span><details className="compare-utilities"><summary>{language==='no'?'Eksport og deling':'Exports & sharing'}</summary><div className="compare-utilities-content"><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/></div></details></>}
+      <label className={styles.switch}><input role="switch" type="checkbox" disabled={loading||!chosen.length} checked={onlyDifferences} onChange={e=>setOnlyDifferences(e.target.checked)}/>{language==='no' ? 'Vis bare forskjeller' : 'Show only differences'}</label>
+      {!loading&&!error&&chosen.length>0&&<><span className="muted compare-field-count" aria-live="polite">{visibleRows.length} {language==='no' ? 'felt' : 'fields'}</span><CopyLink url={shareUrl}/><details className={styles.exports}><summary className="button secondary">{language==='no'?'Eksport':'Export'}</summary><div><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/></div></details></>}
     </div>
     {loading || error ? <DataState /> : <>
-      {chosen.length>0&&<><div ref={tabs} className={styles.tabs} role="group" aria-label={t('Compare Companies')}>{chosen.map(c=><button key={c.org_number} className={`button ${active===c.org_number?'selected':'secondary'}`} style={{minHeight:44,overflowWrap:'anywhere'}} aria-pressed={active===c.org_number} onClick={()=>setActiveOrg(c.org_number)}>{title(c.legal_name)||c.org_number}</button>)}</div><p id="compare-scale-note" className="muted compare-scale-note">{language==='no' ? 'Finansielle diagrammer: felles skala per måltall på tvers av selskapene. Streken viser null; negative beløp går mot venstre.' : 'Financial charts: shared scale per metric across companies. The line marks zero; negative values extend left.'}</p></>}
+      {chosen.length>0&&<><p id="compare-scale-note" className={styles.scaleNote}>{language==='no' ? 'Finansielle diagrammer: felles skala per måltall på tvers av selskapene. Streken viser null; negative beløp går mot venstre.' : 'Financial charts: shared scale per metric across companies. The line marks zero; negative values extend left.'}</p></>}
       
       {chosen.length < 2 && <section className="empty-state" style={{ padding: '24px 20px', marginBottom: 24 }} aria-labelledby="compare-guidance">
         <h2 id="compare-guidance" style={{ fontSize: 20, marginBottom: 8 }}>{t(chosen.length ? 'Choose One More Company' : 'Choose Companies to Compare')}</h2>
         <p style={{ marginBottom: 16 }}>{t('Add at least two companies to see their details side by side.')}</p>
         <button className="button" onClick={openSearch}>{t('Find a Company')}</button>
       </section>}
-      {chosen.length > 0 && <div className={styles.tables} onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchCancel={()=>{touch.current=null;}} onTouchEnd={e=>{if(!touch.current||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-touch.current.x,dy=e.changedTouches[0].clientY-touch.current.y;touch.current=null;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){const index=chosen.findIndex(c=>c.org_number===active);setActiveOrg(chosen[Math.max(0,Math.min(chosen.length-1,index+(dx<0?1:-1)))].org_number);}}} aria-label={t('Company Comparison')} aria-describedby="compare-scale-note">
+      {chosen.length > 0 && <div className={styles.tables} aria-label={t('Company Comparison')} aria-describedby="compare-scale-note">
         <div className={`${styles.row} ${styles.header}`}>  
-          <div className={styles.label}>{t('Company Details')}</div>
-          {chosen.map(company => <div className={`${styles.company} ${active===company.org_number?styles.active:''}`} key={company.org_number}>
-            <span className={styles.avatar} aria-hidden="true">{text(company.legal_name).slice(0,1)}</span><Link href={companyHref(company)} className={styles.companyLink}>{title(company.legal_name) || company.org_number}</Link>
-            <span className="muted" style={{ display: 'block', fontSize: 11 }}>Org. {company.org_number}</span>
-            <button className={styles.remove} aria-label={`${t('Remove')} ${title(company.legal_name) || company.org_number}`} onClick={() => toggle(company.org_number)}>{t('Remove')} ×</button>
-          </div>)}
+          <div className={styles.headerLabel}>{t('Company Details')}</div>
+          {chosen.map((company,index) => <div className={styles.company} key={company.org_number} style={{'--avatar-colour':colour(index)} as CSSProperties}><span className={styles.avatar} aria-hidden="true">{text(company.legal_name).slice(0,1)}</span><Link href={companyHref(company)} className={styles.companyLink}>{title(company.legal_name) || company.org_number}</Link></div>)}
         </div>
-        {([{name:'Identity',categories:['identity','locations']},{name:'Financials',categories:['financials']},{name:'People',categories:['people']},{name:'Online presence',categories:['website','social','jobs','news']}] as const).map(group=>{const groupRows=visibleRows.filter(r=>(group.categories as readonly string[]).includes(r.category));return groupRows.length>0&&<section className={styles.group} key={group.name}><h2>{t(group.name)}{group.name==='Financials'&&<small>{[...new Set(chosen.map(c=>text(c.latest_year)).filter(Boolean))].join(' / ')}</small>}</h2><div role="table" aria-label={t(group.name)}>{groupRows.map(row=><div className={styles.row} role="row" key={row.field}><div className={styles.label} role="rowheader">{t(row.label)}{differs(row)&&<span className={styles.different} title={language==='no'?'Ulike':'Different'}><span className="sr-only">{language==='no'?'Ulike':'Different'}</span></span>}</div>{chosen.map(company=><div className={`${styles.cell} ${active===company.org_number?styles.active:''}`} role="cell" key={company.org_number}><span className={styles.mobileName}>{title(company.legal_name)}</span><ComparisonValue company={company} facts={facts} row={row} scale={scales[row.field]}/></div>)}</div>)}</div></section>;})}
+        <div className={styles.tableBody}>{([{name:'Identity',categories:['identity','locations']},{name:'Financials',categories:['financials']},{name:'People',categories:['people']},{name:'Online presence',categories:['website','social','jobs','news']}] as const).map(group=>{const groupRows=visibleRows.filter(r=>(group.categories as readonly string[]).includes(r.category));return groupRows.length>0&&<section className={styles.group} key={group.name}><h2>{t(group.name)}{group.name==='Financials'&&<small>{[...new Set(chosen.map(c=>text(c.latest_year)).filter(Boolean))].join(' / ')}</small>}</h2><div role="table" aria-label={t(group.name)}>{groupRows.map(row=><div className={styles.row} role="row" key={row.field}><div className={styles.label} role="rowheader">{t(row.label)}{differs(row)&&<span className={styles.different}>{language==='no'?'Ulike':'Different'}</span>}</div>{chosen.map(company=><div className={styles.cell} role="cell" key={company.org_number}><span className={styles.mobileName}>{title(company.legal_name)}</span><ComparisonValue company={company} facts={facts} row={row} scale={scales[row.field]}/></div>)}</div>)}</div></section>;})}</div>
       </div>}
       {chosen.length > 1 && onlyDifferences && visibleRows.length === 0 && <p className="empty-state" role="status">{language==='no' ? 'Ingen forskjeller i de sammenlignede feltene.' : 'No differences in the compared fields.'}</p>}
     </>}
