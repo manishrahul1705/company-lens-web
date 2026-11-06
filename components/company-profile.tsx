@@ -88,11 +88,11 @@ function Financials({ company: c, facts }: { company: Company; facts: Fact[] }) 
         const value = f ? number(f.amount) : null;
         if (!f || value === null) return <span key={metric} className="profile-chart-empty" />;
         const id = `${year}-${metric}`;
-        const description = `${year} · ${t(metric === 'revenue' ? 'Revenue' : 'Annual Result')}: ${money(value, undefined, c.currency)}`;
+        const description = `${year} · ${t(metric === 'revenue' ? 'Revenue' : 'Annual result')}: ${money(value, undefined, c.currency)}`;
         return <button type="button" key={metric} className={`profile-chart-bar profile-chart-${metric}${value<0?' profile-chart-negative':''}`} style={{top:`${value >= 0 ? (high-value)/span*100 : zero}%`,height:`${Math.max(Math.abs(value)/span*100, .6)}%`}} title={description} aria-label={description} aria-pressed={activeBar===id} onClick={()=>setActiveBar(id)} onFocus={()=>setActiveBar(id)}><span className="profile-chart-tooltip">{description}</span></button>;
       })}</div><span className="profile-chart-year-label">{year}</span></div>)}</div> : <Missing />}
     </figure>
-      {activeBar && <p className="profile-chart-selection" role="status">{(() => { const [year,...parts] = activeBar.split('-'); const f = financialFact(c,facts,parts.join('-'),year); return f ? <>{year} · {t(text(f.metric)==='revenue'?'Revenue':'Annual Result')}: {money(f.amount,undefined,c.currency)} <button type="button" className="source-button" onClick={()=>openSource(c,[f])}>{t('Source')}</button></> : null; })()}</p>}
+      {activeBar && <p className="profile-chart-selection" role="status">{(() => { const [year,...parts] = activeBar.split('-'); const f = financialFact(c,facts,parts.join('-'),year); return f ? <>{year} · {t(text(f.metric)==='revenue'?'Revenue':'Annual result')}: {money(f.amount,undefined,c.currency)} <button type="button" className="source-button" onClick={()=>openSource(c,[f])}>{t('Source')}</button></> : null; })()}</p>}
     {years.length ? <div className="profile-annual-table"><h3>{t('Annual financial figures')} · {text(c.currency)||'NOK'}</h3><table><thead><tr><th scope="col">{t('Year')}</th><th scope="col">{t('Metric')}</th><th scope="col">{t('Amount')}</th><th scope="col">{t('Source')}</th></tr></thead>{years.map(year=><tbody key={year}>{metrics.map(([metric,name],index)=>{const f=financialFact(c,facts,metric,year);return <tr key={metric} className={index===0?'profile-year-start':undefined}><th scope="row">{year}</th><td>{t(name)}</td><td><Display value={f?money(f.amount,undefined,c.currency):''}/></td><td>{f&&<SourceButton company={c} facts={[f]}/>}</td></tr>;})}</tbody>)}</table></div> : <p className="missing">{t('Not found')}</p>}
   </>;
 }

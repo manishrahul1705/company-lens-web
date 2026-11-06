@@ -1,6 +1,6 @@
 /* Profile-only layout overrides: independent of the search-card stylesheet. */
 .company-profile-surface .profile-page-nav{order:0;min-width:0}
-.company-profile-surface .profile-page-nav>div{display:flex;overflow-x:auto;gap:8px;max-width:100%;padding:3px}
+.company-profile-surface .profile-page-nav>div{display:flex;flex-wrap:wrap;gap:8px;max-width:100%;padding:3px}
 .company-profile-surface .profile-page-nav a{display:flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:20px;white-space:nowrap;text-decoration:none;font-size:14px}
 .company-profile-surface .profile-page-nav a[aria-current]{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary);font-weight:600}
 .company-profile-surface .profile-key-card{order:1}
@@ -23,7 +23,7 @@
 .company-profile-surface .profile-annual-table :is(th,td){padding:10px 6px;white-space:normal;overflow-wrap:anywhere;text-align:left;border-bottom:1px solid var(--border)}
 .company-profile-surface .profile-annual-table th:first-child{width:12%}
 .company-profile-surface .profile-annual-table th:nth-child(2){width:29%}
-.company-profile-surface .profile-annual-table th:last-child{width:52px}
+.company-profile-surface .profile-annual-table th:last-child{width:76px;min-width:76px;white-space:nowrap;overflow-wrap:normal}
 .company-profile-surface .profile-annual-table .profile-year-start>*{border-top:2px solid var(--border)}
 @media(min-width:1024px){
  .company-profile-surface .profile-page-nav>div{display:grid;overflow:visible;gap:4px}
@@ -97,10 +97,10 @@ main>.container:has(.company-profile-surface){max-width:1200px;width:calc(100% -
 .company-profile-surface .profile-chart-pair{position:relative;display:flex;height:100%;gap:4px}
 .company-profile-surface .profile-chart-bar{position:absolute;width:calc(50% - 2px);border:0;border-radius:3px 3px 0 0;padding:0;min-height:1px;cursor:pointer;background:#087f5b}
 .company-profile-surface .profile-chart-revenue{left:0}
-.company-profile-surface .profile-chart-annual_result{right:0;background:#94b8a7}
+.company-profile-surface .profile-chart-annual_result{right:0;background:#94b8a7}.company-profile-surface .profile-chart-bar.profile-chart-negative{background:#b46d69}
 .company-profile-surface .profile-chart-year-label{position:absolute;top:calc(100% + 6px);left:0;right:0;text-align:center;font-size:11px;line-height:16px}
 .company-profile-surface .profile-chart-tooltip{display:none}
-.company-profile-surface .profile-chart-bar:hover .profile-chart-tooltip,.company-profile-surface .profile-chart-bar:focus-visible .profile-chart-tooltip{display:block;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);width:155px;max-width:45vw;padding:6px;background:var(--foreground);color:var(--background);border-radius:4px;z-index:5;font-size:11px;line-height:16px;pointer-events:none}
+.company-profile-surface .profile-chart-bar:hover .profile-chart-tooltip,.company-profile-surface .profile-chart-bar:focus .profile-chart-tooltip,.company-profile-surface .profile-chart-bar[aria-pressed=true] .profile-chart-tooltip{display:block;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);width:155px;max-width:45vw;padding:6px;background:var(--foreground);color:var(--background);border-radius:4px;z-index:5;font-size:11px;line-height:16px;pointer-events:none}
 .company-profile-surface .profile-chart-year:first-of-type .profile-chart-tooltip{left:0;transform:none}
 .company-profile-surface .profile-chart-year:last-child .profile-chart-tooltip{left:auto;right:0;transform:none}
 .company-profile-surface .profile-chart-selection{font-size:12px;line-height:18px;margin:8px 0 0;overflow-wrap:anywhere}
