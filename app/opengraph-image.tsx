@@ -1,0 +1,7 @@
+import {ImageResponse} from 'next/og';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+export const alt='Nordic Company Lens — Norwegian companies. Every fact traced to its source.';
+export const size={width:1200,height:630};
+export const contentType='image/png';
+export default async function Image(){const companies=JSON.parse(await readFile(join(process.cwd(),'public/data/companies.json'),'utf8'));const facts=JSON.parse(await readFile(join(process.cwd(),'public/data/facts.json'),'utf8')) as Record<string,unknown>[];const websites=new Set(facts.filter(f=>f.category==='website'&&typeof f.proof_quote==='string'&&f.proof_quote.trim()).map(f=>f.org_number)).size;return new ImageResponse(<div style={{display:'flex',width:'100%',height:'100%',background:'#0F2A24',color:'#F4EFE6',padding:72,flexDirection:'column',justifyContent:'space-between',fontFamily:'sans-serif'}}><div style={{fontSize:28,color:'#C9A86A'}}>Nordic Company Lens</div><div style={{display:'flex',flexDirection:'column',fontSize:72,letterSpacing:-3,lineHeight:1.1}}><span>Every fact,</span><span>traced to its source.</span></div><div style={{display:'flex',gap:40,borderTop:'1px solid #577066',paddingTop:28}}>{[[companies.length,'companies'],[facts.length,'sourced facts'],[websites,'verified websites']].map(([value,label])=><div key={label} style={{display:'flex',flexDirection:'column',gap:8}}><span style={{fontSize:40}}>{Number(value).toLocaleString('en-US')}</span><span style={{fontSize:20,color:'#C9D8CE'}}>{label}</span></div>)}</div></div>,size);}

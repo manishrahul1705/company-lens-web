@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.16.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/derive-directory.mjs && next build",
     "start": "next start",
     "lint": "eslint"
   },
