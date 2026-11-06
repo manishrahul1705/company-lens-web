@@ -1,4 +1,7 @@
 import "./globals.css"
+import {Inter, Newsreader} from 'next/font/google';
+const inter = Inter({subsets:['latin'],weight:['400','500','600'],variable:'--font-ui',display:'swap',preload:true});
+const newsreader = Newsreader({subsets:['latin'],weight:['400','500'],variable:'--font-editorial',display:'swap',preload:true});
 import {Suspense} from 'react';
 import { LensProvider } from '@/components/lens-provider';
 import { LensShell } from '@/components/lens-shell';
@@ -10,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${newsreader.variable}`}>
       <body>
         <Suspense fallback={<main aria-label="Loading"><div className="container skeleton-state"><div className="skeleton"/><div className="skeleton"/><div className="skeleton"/></div></main>}><LensProvider><LensShell>{children}</LensShell></LensProvider></Suspense>
       </body>
