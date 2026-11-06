@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import {useRef,useState, type CSSProperties, type ReactNode} from 'react';
+import {useEffect,useRef,useState, type CSSProperties, type ReactNode} from 'react';
+import {ArrowIcon} from '@/components/arrow-icon';
 import {ExportActions} from '@/components/export-actions';
 import {
   type Company, type Fact, companyHref, date, evidence, financialFact, found, jobs,
@@ -27,6 +28,7 @@ const rows: Row[] = [
 ];
 
 function ComparisonValue({ company, facts, row }: { company: Company; facts: Fact[]; row: Row }) {
+  const {language} = useLensData();
   if (!found(company, row.category)) return <StatusBadge company={company} category={row.category} />;
   const raw = company[row.field];
   let value: ReactNode = <Missing />;
@@ -55,10 +57,10 @@ function ComparisonValue({ company, facts, row }: { company: Company; facts: Fac
     hasValue = !!url;
     if (url) value = <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline', textUnderlineOffset: 3 }}>{text(raw)}</a>;
   } else if (row.field === 'industry_text') {
-    const description = text(raw);
+    const description = language === 'en' ? text(company.industry_text_en) || text(raw) : text(raw);
     const code = text(company.industry_code);
     hasValue = !!(description || code);
-    if (hasValue) value = <>{description || code}{description && code ? <span className="muted" style={{ display: 'block', fontSize: 11 }}>{code}</span> : null}</>;
+    if (hasValue) value = <>{description || code}{language === 'en' && text(company.industry_text_en) && text(raw) && <small className="muted" lang="nb" style={{display:'block'}}>{text(raw)}</small>}{description && code ? <span className="muted" style={{ display: 'block', fontSize: 11 }}>{code}</span> : null}</>;
   } else {
     hasValue = !!text(raw);
     if (hasValue) value = row.field === 'founded' ? date(raw) : row.field === 'municipality' || row.field === 'ceo' ? title(raw) : text(raw);
@@ -78,19 +80,20 @@ function ComparisonValue({ company, facts, row }: { company: Company; facts: Fac
   </div>;
 }
 
-function MiniFinancials({company, facts}: {company: Company; facts: Fact[]}) {
+type FinancialMetric = 'revenue' | 'annual_result';
+type MetricScale = Record<FinancialMetric,{min:number;max:number}>;
+function MiniFinancials({company, facts, scales}: {company: Company; facts: Fact[]; scales: MetricScale}) {
   const {language, t} = useLensData();
   const no = language === 'no';
   const entries = (['revenue','annual_result'] as const).map(metric => ({metric, fact:financialFact(company, facts, metric, company.latest_year)}));
-  const scale = Math.max(1,...entries.map(entry => Math.abs(number(entry.fact?.amount) ?? 0)));
   return <figure className="compare-mini-chart" style={{margin:'12px 0 0',minWidth:0}}>
     <figcaption className="muted" style={{fontSize:11,marginBottom:8}}>{no ? 'Finansielt øyeblikksbilde' : 'Financial snapshot'}{text(company.latest_year) ? ` · ${text(company.latest_year)}` : ''}</figcaption>
     {!found(company, 'financials') ? <StatusBadge company={company} category="financials"/> : entries.map(({metric,fact}) => <div key={metric} style={{marginBottom:8}}>
       <div style={{fontSize:11,overflowWrap:'anywhere'}}>{t(metric === 'revenue' ? 'Revenue' : 'Annual Result')}</div>
-      <div style={{fontSize:11,overflowWrap:'anywhere',fontVariantNumeric:'tabular-nums'}}>{fact ? money(fact.amount, undefined, company.currency) : <Missing/>}{fact && <SourceButton company={company} facts={[fact]} icon/>}</div>
-      {fact && <div aria-hidden="true" style={{height:5,background:'var(--rule, #dde5e0)',borderRadius:2,marginTop:4}}><div style={{width:`${Math.abs(number(fact.amount) ?? 0)/scale*100}%`,height:5,background:'var(--primary)',opacity:metric === 'revenue' ? 1 : .55,borderRadius:2}}/></div>}
+      <div style={{fontSize:11,overflowWrap:'anywhere',fontVariantNumeric:'tabular-nums'}}>{fact ? money(fact.amount, fact.year, company.currency) : <Missing/>}{fact && <SourceButton company={company} facts={[fact]} icon/>}</div>
+      {fact && (()=>{const value=number(fact.amount)!;const {min,max}=scales[metric];const span=max-min||1;const zero=-min/span*100;return <div aria-hidden="true" style={{height:12,position:'relative',background:'var(--rule, #dde5e0)',borderRadius:2,marginTop:4}}><span style={{position:'absolute',left:`${zero}%`,top:-3,bottom:-3,width:1,background:'var(--foreground)'}}/><span style={{position:'absolute',left:`${(Math.min(value,0)-min)/span*100}%`,width:`${Math.abs(value)/span*100}%`,height:12,background:'var(--primary)',borderRadius:2}}/></div>;})()}
     </div>)}
-    {entries.some(entry => (number(entry.fact?.amount) ?? 0)<0) && <p className="muted" style={{fontSize:10}}>{no ? 'Søylene viser absoluttverdi; negative beløp har minustegn.' : 'Bars show magnitude; negative amounts carry a minus sign.'}</p>}
+    <p className="muted" style={{fontSize:10}}>{no ? 'Felles skala per måltall. Negative beløp til venstre for null.' : 'Shared scale per metric. Negative values extend left of zero.'}</p>
   </figure>;
 }
 
@@ -98,12 +101,17 @@ export default function CompanyComparison() {
   const { companies, facts, loading, error, selected, toggle, openSearch,t,language } = useLensData();
   const [onlyDifferences,setOnlyDifferences]=useState(false);
   const [activeOrg,setActiveOrg]=useState('');
+  const [backHref,setBackHref]=useState('/');
+  useEffect(()=>{try{const saved=sessionStorage.getItem('ncl-search-url');if(saved && (saved==='/' || saved.startsWith('/?')))setBackHref(saved);}catch{}},[]);
+  const tabs=useRef<HTMLDivElement>(null);
+  useEffect(()=>{const button=tabs.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]');button?.scrollIntoView({block:'nearest',inline:'nearest'});},[activeOrg]);
   const touch=useRef<{x:number;y:number}|null>(null);
   // Resolve against current records so stale persisted selections never create invented columns.
   const chosen = [...new Set(selected)].slice(0,3).flatMap(org => {
     const company = companies.find(c => c.org_number === org);
     return company ? [company] : [];
   });
+  const scales = Object.fromEntries((['revenue','annual_result'] as const).map(metric=>{const values=chosen.flatMap(c=>{const f=financialFact(c,facts,metric,c.latest_year);const value=number(f?.amount);return value===null?[]:[value];});return [metric,{min:Math.min(0,...values),max:Math.max(0,...values)}];})) as MetricScale;
   const active=chosen.some(c=>c.org_number===activeOrg)?activeOrg:chosen[0]?.org_number;
   const shareUrl='/compare?orgs='+chosen.map(c=>c.org_number).join(',');
   const differs=(row:Row)=>new Set(chosen.map(c=>{if(!found(c,row.category))return text(c.sections[row.category]);if(row.field==='locations_count')return String(locations(c,facts).length);if(row.field==='jobs_count')return String(jobs(c,facts).length);return [text(c[row.field]),...(row.category==='financials'?[text(c.latest_year),text(c.currency)]:[])].join('|');})).size>1;
@@ -111,7 +119,7 @@ export default function CompanyComparison() {
   const columns: CSSProperties = { gridTemplateColumns: `minmax(120px, .7fr) repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))` };
 
   return <div>
-    <Link className="back-link" href="/">← {t('Company Search')}</Link>
+    <Link className="back-link" href={backHref}><ArrowIcon direction="left"/> {t('Company Search')}</Link>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
       <div>
         <p className="eyebrow" style={{ marginBottom: 10 }}>{t('Side by Side')}</p>
@@ -122,7 +130,7 @@ export default function CompanyComparison() {
     </div>
 
     {loading || error ? <DataState /> : <>
-      {chosen.length>0&&<><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/><div style={{display:'flex',flexWrap:'wrap',gap:16,alignItems:'center',margin:'16px 0'}}><span className="muted">{t('Differences highlighted')}</span><label className="check-filter"><input type="checkbox" checked={onlyDifferences} onChange={e=>setOnlyDifferences(e.target.checked)}/>{language==='no' ? 'Vis bare forskjeller' : 'Show only differences'}</label><span className="muted text-xs" aria-live="polite">{visibleRows.length} {language==='no' ? 'felt' : 'fields'}</span></div><div className="compare-tabs" role="group" aria-label={t('Compare Companies')}>{chosen.map(c=><button key={c.org_number} className={`button ${active===c.org_number?'selected':'secondary'}`} aria-pressed={active===c.org_number} onClick={()=>setActiveOrg(c.org_number)}>{title(c.legal_name)||c.org_number}</button>)}</div></>}
+      {chosen.length>0&&<><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/><div style={{display:'flex',flexWrap:'wrap',gap:16,alignItems:'center',margin:'16px 0'}}><span className="muted">{t('Differences highlighted')}</span><label className="check-filter"><input type="checkbox" checked={onlyDifferences} onChange={e=>setOnlyDifferences(e.target.checked)}/>{language==='no' ? 'Vis bare forskjeller' : 'Show only differences'}</label><span className="muted text-xs" aria-live="polite">{visibleRows.length} {language==='no' ? 'felt' : 'fields'}</span></div><div ref={tabs} className="compare-tabs" style={{flexWrap:'nowrap',overflowX:'auto',maxWidth:'100%',scrollSnapType:'x proximity'}} role="group" aria-label={t('Compare Companies')}>{chosen.map(c=><button key={c.org_number} className={`button ${active===c.org_number?'selected':'secondary'}`} style={{flex:'0 0 auto',maxWidth:'80%',scrollSnapAlign:'start',minHeight:44}} aria-pressed={active===c.org_number} onClick={()=>setActiveOrg(c.org_number)}>{title(c.legal_name)||c.org_number}</button>)}</div></>}
       
       {chosen.length < 2 && <section className="empty-state" style={{ padding: '24px 20px', marginBottom: 24 }} aria-labelledby="compare-guidance">
         <h2 id="compare-guidance" style={{ fontSize: 20, marginBottom: 8 }}>{t(chosen.length ? 'Choose One More Company' : 'Choose Companies to Compare')}</h2>
@@ -136,7 +144,7 @@ export default function CompanyComparison() {
             <Link href={companyHref(company)} style={{ display: 'block', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none', paddingTop: 4 }}>{title(company.legal_name) || company.org_number}</Link>
             <span className="muted" style={{ display: 'block', fontSize: 11 }}>Org. {company.org_number}</span>
             <button className="button text" style={{ fontSize: 11, minHeight: 44, paddingTop: 4, paddingBottom: 4 }} aria-label={`${t('Remove')} ${title(company.legal_name) || company.org_number}`} onClick={() => toggle(company.org_number)}>{t('Remove')} ×</button>
-            <MiniFinancials company={company} facts={facts}/>
+            <MiniFinancials company={company} facts={facts} scales={scales}/>
           </div>)}
         </div>
         {visibleRows.map(row => <div className={`compare-row ${differs(row)?'compare-different':''}`} role="row" key={row.field} style={columns}>
