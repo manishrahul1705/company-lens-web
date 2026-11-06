@@ -6,9 +6,12 @@ body main>.container:has(.ledger-first-screen){display:block;max-width:calc(var(
 .page-transition{min-width:0}
 /* Full-bleed paint without viewport-width boxes (which include scrollbar width). */
 body .ledger-first-screen{width:100%;max-width:none;margin-inline:0;padding:64px 0;overflow:visible;box-shadow:0 0 0 100vmax #0f2a24;clip-path:inset(0 -100vmax);background:#0f2a24}
-html.dark body .ledger-first-screen{box-shadow:0 0 0 100vmax var(--background)}
-body .company-profile-surface .profile-header-band{border-radius:0;border-inline:0;padding:36px 0;overflow:visible;box-shadow:0 0 0 100vmax var(--card);clip-path:inset(0 -100vmax)}
-body .company-profile-surface .profile-header-band:before{inset:0 calc(-1 * var(--page-gutter));background-position:0 var(--grid-shift,0px)}
+html.dark body .ledger-first-screen{background:var(--background);box-shadow:0 0 0 100vmax var(--background)}
+body .ledger-first-screen::before{content:none}
+/* Paint all banner layers together, independently of the aligned content box. */
+body main:has(.company-profile-surface){overflow-x:clip}
+body .company-profile-surface .profile-header-band{border-radius:0;border-inline:0;border-top:0;padding:39px 0 36px;overflow:visible;background:transparent;box-shadow:none;clip-path:inset(0 -100vmax)}
+body .company-profile-surface .profile-header-band:before{inset:0 calc(50% - 50vw);opacity:1;mask-image:none;border-top:3px solid var(--industry-accent,var(--primary));background-image:linear-gradient(color-mix(in srgb,var(--industry-accent,var(--primary)) 14%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--industry-accent,var(--primary)) 14%,transparent) 1px,transparent 1px),linear-gradient(120deg,var(--card),color-mix(in srgb,var(--industry-accent,var(--primary)) 14%,var(--card)));background-size:36px 36px,36px 36px,100% 100%;background-position:0 var(--grid-shift,0px),0 var(--grid-shift,0px),0 0;pointer-events:none}
 body .company-results{grid-template-columns:minmax(0,1fr)}
 @media(min-width:1024px){body .company-results{grid-template-columns:repeat(2,minmax(0,1fr))}body .company-profile-surface .profile-content-grid{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:32px}}
 @media(min-width:1440px){body .company-results{grid-template-columns:repeat(3,minmax(0,1fr))}}
