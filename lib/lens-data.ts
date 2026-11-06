@@ -27,7 +27,24 @@ export function financialFact(c: Company, facts: Fact[], metric: string, year: u
 export function growthFacts(c: Company, facts: Fact[]) { const year=text(c.latest_year); const first=financialFact(c,facts,'revenue',year); const prior=/^\d{4}$/.test(year) ? financialFact(c,facts,'revenue',String(Number(year)-1)) : undefined; return first && prior ? [first,prior] : []; }
 const aliases: Record<string,string[]> = {legal_form:['legal form','organisasjonsform'],municipality:['municipality','kommune'],industry_code:['industry code','industry','næringskode'],industry_text:['industry','industry text','næring'],founded:['founded','stiftelsesdato'],employees:['employees','number of employees'],ceo:['ceo','daglig leder'],board_chair:['board chair','styreleder'],website:['website','nettside'],org_number:['organisation number','organization number','org number'],address:['address','registered address']};
 export function evidence(c: Company, facts: Fact[], field: string): Fact[] { if(field==='latest_revenue') { const f=financialFact(c,facts,'revenue',c.latest_year); return f?[f]:[]; } if(field==='latest_profit') { const f=financialFact(c,facts,'annual_result',c.latest_year); return f?[f]:[]; } if(field==='revenue_growth') return growthFacts(c,facts); const names=aliases[field] || [field.replaceAll('_',' ')]; return companyFacts(c,facts).filter(f=>names.includes(text(f.field).toLowerCase())); }
-export function locations(c: Company, facts: Fact[]) { if(!found(c,'locations')) return []; const entries=companyFacts(c,facts,'locations').filter(f=>text(f.value)&&!(/workplaces?\s*\(count\)|count/i.test(text(f.field)))); const a=text(c.address); return [...(a ? [{value:address(a),fact:entries.find(f=>text(f.value)===a)}] : []),...entries.filter(f=>text(f.value)!==a).map(f=>({value:address(f.value),fact:f}))]; }
+export type Location = { value: string; fact: Fact | undefined; facts: Fact[]; roles: string[] };
+export function locations(c: Company, facts: Fact[]): Location[] {
+  const entries = facts.filter(f => f.org_number === c.org_number && text(f.value) && !/count|antall/i.test(text(f.field)) && (f.category === 'locations' || (f.category === 'identity' && /address|adresse|workplace|arbeidssted/i.test(text(f.field)))));
+  if (!found(c, 'locations') && !entries.length) return [];
+  const key = (value: string) => value.normalize('NFKC').toLocaleLowerCase('nb-NO').replace(/[\p{P}\p{Z}\s]+/gu, '');
+  const merged = new Map<string, Location>();
+  const add = (value: string, role: string, fact?: Fact) => {
+    const id = key(value);
+    if (!id) return;
+    let place = merged.get(id);
+    if (!place) { place = { value: address(value).replace(/\s+/g, ' '), fact, facts: [], roles: [] }; merged.set(id, place); }
+    if (!place.roles.includes(role)) place.roles.push(role);
+    if (fact && !place.facts.includes(fact)) { place.facts.push(fact); place.fact ??= fact; }
+  };
+  if (text(c.address)) add(text(c.address), 'Business address');
+  for (const fact of entries) add(text(fact.value), /workplace|arbeidssted/i.test(text(fact.field)) ? 'Registered workplace' : 'Business address', fact);
+  return [...merged.values()];
+}
 export function jobs(c: Company, facts: Fact[]) { return companyFacts(c,facts,'jobs').filter(f=>text(f.value)); }
 export function parseCompanies(raw: unknown): Company[] { if(!Array.isArray(raw)) throw new Error('Company data must be an array.'); const seen=new Set<string>(); return raw.flatMap(v=>{ if(!v || typeof v!=='object' || Array.isArray(v)) return []; const id=text(v.org_number); if(!/^\d{9}$/.test(id)||seen.has(id)) return []; seen.add(id); return [{...v,org_number:id,sections:v.sections && typeof v.sections==='object' && !Array.isArray(v.sections) ? v.sections : {}}]; }); }
 export function parseFacts(raw: unknown): Fact[] { if(!Array.isArray(raw)) throw new Error('Fact data must be an array.'); return raw.flatMap(v=>v && typeof v==='object' && !Array.isArray(v) && /^\d{9}$/.test(text(v.org_number)) && categories.includes(v.category) ? [{...v,org_number:text(v.org_number),category:text(v.category)}] : []); }
