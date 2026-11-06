@@ -15,11 +15,15 @@ body .company-results{grid-template-columns:minmax(0,1fr)}
 @media(max-width:640px){body .ledger-first-screen{padding:32px 0}.ledger-first-screen .example-companies{flex-wrap:wrap!important;overflow:visible}.ledger-first-screen .example-companies>*{max-width:100%;white-space:normal!important}}
 body .ledger-first-screen .hero-stat-icon{display:inline-grid!important;place-items:center;width:36px;height:36px;border-radius:50%;background:rgb(217 184 119 / .15)!important;color:#f2ce8c!important;opacity:1!important}
 body .ledger-first-screen .hero-stat-card:nth-child(even) .hero-stat-icon{background:rgb(61 190 139 / .15)!important;color:#87e4b7!important}.hero-stat-icon svg{opacity:1!important;stroke:currentColor}
-.hero-stat-card,[data-depth-card]{position:relative;transition:transform 200ms ease,box-shadow 200ms ease;box-shadow:inset 0 1px 0 #ffffff25,0 3px 7px #0001,0 12px 24px #0002}
+body .ledger-first-screen .hero-stat-card,body [data-depth-card]{position:relative;transition:transform 200ms ease,box-shadow 200ms ease;box-shadow:inset 0 1px 0 #ffffff25,0 3px 7px #0001,0 12px 24px #0002}
 .hero-stat-card:after,[data-depth-card]:after{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at var(--light-x,50%) var(--light-y,30%),#ffffff16,transparent 60%);pointer-events:none;opacity:0;transition:opacity 200ms}
 @media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
-[data-depth-active]{transform:perspective(900px) rotateX(var(--depth-x,0deg)) rotateY(var(--depth-y,0deg)) translateY(-3px);box-shadow:inset 0 1px 0 #ffffff30,0 5px 12px #0002,0 18px 32px color-mix(in srgb,var(--industry-accent,#3dbe8b) 20%,transparent)}
-[data-depth-active]:after{opacity:1}.profile-hero-avatar[data-depth-active]{box-shadow:var(--shadow-x,0px) 14px 24px #0003}
+body .hero-stat-card:hover,body [data-depth-card]:hover,body .company-results .result-card.lens-company-card:hover{transform:perspective(900px) rotateX(var(--hover-x,2deg)) rotateY(var(--hover-y,-2deg)) translateY(-3px);box-shadow:inset 0 1px 0 #ffffff30,0 5px 12px #0002,0 18px 32px color-mix(in srgb,var(--industry-accent,#3dbe8b) 20%,transparent)}
+.hero-stat-card:has(dt:hover),[data-depth-card]:has(>div:first-child:hover){--hover-x:3deg;--hover-y:2deg}.hero-stat-card:has(dd:hover),[data-depth-card]:has(>div:last-child:hover){--hover-x:-2deg;--hover-y:-2deg}
+.hero-stat-card:hover:after,[data-depth-card]:hover:after{opacity:1}
+body .company-results .result-card.lens-company-card:hover{background:radial-gradient(ellipse at 25% 10%,color-mix(in srgb,var(--industry-accent) 7%,transparent),transparent 65%),var(--card)}
+body .company-results .result-card.lens-company-card:has(.lens-card-heading:hover){--hover-x:3deg;--hover-y:2deg}body .company-results .result-card.lens-company-card:has(.lens-card-actions:hover){--hover-x:-2deg;--hover-y:-2deg}
+body .company-profile-surface .profile-hero-avatar{transition:transform 200ms,box-shadow 200ms}body .company-profile-surface .profile-hero-avatar:hover{transform:perspective(700px) rotateX(2deg) rotateY(-2deg) translateY(-2px);box-shadow:inset 0 1px 0 #ffffff40,4px 14px 24px #0003,0 3px 6px #0002}
 body .company-profile-surface .profile-summary-grid>div:hover,body .company-profile-surface .profile-key-figure:hover{transform:translateY(-2px)}
 body :is(.button,.chip,button.theme-toggle,button.language-toggle):active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 2px 4px #0003}
 }

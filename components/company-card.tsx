@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect,useRef,useState,type PointerEvent,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {useLensData} from './lens-provider';
 import {readAsset} from '@/lib/data-client';
 import {categories,companyFacts,companyHref,found,money,number,parseFacts,text,title,type Company,type Fact} from '@/lib/lens-data';
@@ -45,15 +45,7 @@ export function CompanyCard({company:c,highlight}:{company:Company;highlight:(va
   const count=Number(metadata.evidenceCounts[c.org_number]||0).toLocaleString(language==='no'?'nb-NO':'en-US');
   const amount=found(c,'financials')?number(c.latest_revenue):null;
   const industry=found(c,'identity')?((language==='en'?text(c.industry_text_en):'')||text(c.industry_text)):'';
-  const reset=()=>{card.current?.style.removeProperty('--card-rx');card.current?.style.removeProperty('--card-ry');};
-  const tilt=(event:PointerEvent<HTMLElement>)=>{
-    if(event.pointerType!=='mouse'||!matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches){reset();return;}
-    const bounds=event.currentTarget.getBoundingClientRect();
-    const clamp=(value:number)=>Math.max(-4,Math.min(4,value));
-    event.currentTarget.style.setProperty('--card-rx',`${clamp((.5-(event.clientY-bounds.top)/bounds.height)*8)}deg`);
-    event.currentTarget.style.setProperty('--card-ry',`${clamp(((event.clientX-bounds.left)/bounds.width-.5)*8)}deg`);
-  };
-  return <article ref={card} className="result-card lens-company-card" data-industry={industryGroup(c)} onPointerMove={tilt} onPointerLeave={reset} onMouseEnter={()=>prefetchFacts(c.org_number)} onFocusCapture={()=>prefetchFacts(c.org_number)}>
+  return <article ref={card} className="result-card lens-company-card" data-industry={industryGroup(c)} onMouseEnter={()=>prefetchFacts(c.org_number)} onFocusCapture={()=>prefetchFacts(c.org_number)}>
     <div className="lens-card-heading"><span className="lens-card-avatar" aria-hidden="true">{name.charAt(0)}</span><h2><Link className="lens-card-link" href={companyHref(c)} onKeyDown={event=>{if(event.key===' '){event.preventDefault();if(!event.repeat)event.currentTarget.click();}}}>{highlight(name)}</Link></h2><span className="lens-card-arrow" aria-hidden="true">→</span></div>
     <p className="lens-card-meta">{highlight(c.org_number)}{text(c.legal_form)&&` · ${text(c.legal_form)}`} · {highlight(found(c,'identity')?title(c.municipality)||t('Not found'):t('Not found'))}</p>
     <p className="lens-card-industry">{highlight(industry||t('Not found'))}{language==='en'&&text(c.industry_text_en)&&text(c.industry_text)&&found(c,'identity')&&<small lang="nb">{text(c.industry_text)}</small>}</p>
