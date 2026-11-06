@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import {useEffect,useMemo,useState} from 'react';
 import {useLensData} from '@/components/lens-provider';
-import {categories,parseCompanies,status,text,title,type Company} from '@/lib/lens-data';
+import {title} from '@/lib/lens-data';
+import {readAsset} from '@/lib/data-client';
 import styles from './explore-charts.module.css';
 
 type Row={value:string;label:string;count:number};
@@ -11,31 +12,22 @@ const sectionNames:Record<string,[string,string]>={identity:['Registry','Registe
 const states=[{key:'found',label:['Found','Funnet'],color:'#087451'},{key:'gap',label:['Not found','Ikke funnet'],color:'#9e8b68'},{key:'unchecked',label:["Couldn’t check",'Kunne ikke sjekkes'],color:'#8b99a0'}] as const;
 
 export function ExploreCharts(){
-  const {companies,language}=useLensData();
-  const [directory,setDirectory]=useState<Company[]|null>(null),[loadError,setLoadError]=useState(false),[attempt,setAttempt]=useState(0);
+  const {metadata,language}=useLensData();
+  const [directory,setDirectory]=useState<{total:number;municipalities:{value:string;count:number}[];industries:{value:string;label:string;label_en:string;count:number}[];coverage:{section:string;counts:number[]}[]}|null>(null),[loadError,setLoadError]=useState(false),[attempt,setAttempt]=useState(0);
   const local=(...labels:readonly string[])=>language==='no'?labels[1]:labels[0];
   const number=(n:number)=>new Intl.NumberFormat(language==='no'?'nb-NO':'en-GB').format(n);
   const percent=(n:number,total:number)=>new Intl.NumberFormat(language==='no'?'nb-NO':'en-GB',{style:'percent',maximumFractionDigits:1}).format(total?n/total:0);
   // Other routes may leave only a company snapshot in the provider. Always confirm
   // the complete directory before publishing totals; the browser can reuse its cache.
-  useEffect(()=>{const controller=new AbortController();setLoadError(false);fetch('/data/companies.json',{signal:controller.signal}).then(response=>{if(!response.ok)throw new Error('directory');return response.json();}).then(raw=>setDirectory(parseCompanies(raw))).catch(error=>{if(error.name!=='AbortError')setLoadError(true);});return()=>controller.abort();},[attempt]);
-  const records=directory??companies;
+  useEffect(()=>{let active=true;setLoadError(false);readAsset('/data/explore.json',metadata.version).then(raw=>{if(active)setDirectory(raw as NonNullable<typeof directory>);}).catch(()=>{if(active)setLoadError(true);});return()=>{active=false;};},[attempt,metadata.version]);
+  const records={length:directory?.total||0};
   const charts=useMemo(()=>{
-    const municipalities=new Map<string,Row>(),industries=new Map<string,Row>();
-    for(const company of records){
-      const municipality=text(company.municipality);
-      if(municipality){const row=municipalities.get(municipality)||{value:municipality,label:title(municipality),count:0};row.count++;municipalities.set(municipality,row);}
-      const industry=text(company.industry_code||company.industry_text);
-      if(industry){const row=industries.get(industry)||{value:industry,label:language==='no'?text(company.industry_text)||industry:text(company.industry_text_en)||`${local('English name unavailable','Engelsk navn er ikke tilgjengelig')} (${industry})`,count:0};row.count++;industries.set(industry,row);}
-    }
-    const top=(rows:Map<string,Row>)=>[...rows.values()].sort((a,b)=>b.count-a.count||a.value.localeCompare(b.value)).slice(0,10);
-    const coverage=categories.map(section=>({section,counts:records.reduce((counts,company)=>{const state=status(company,section);counts[state==='Found'?0:state==='Not found'?1:2]++;return counts;},[0,0,0])}));
-    return {municipalities:top(municipalities),industries:top(industries),coverage};
-  },[records,language]);
+    return {municipalities:(directory?.municipalities||[]).slice(0,10).map(row=>({...row,label:title(row.value)||local('Municipality data gap','Manglende kommune')})),industries:(directory?.industries||[]).slice(0,10).map(row=>({...row,label:(language==='no'?row.label:row.label_en)||`${local('Industry label data gap','Manglende næringsnavn')} (${row.value||'—'})`})),coverage:directory?.coverage||[]};
+  },[directory,language]);
   const href=(key:string,value:string)=>`/?${key}=${encodeURIComponent(value)}`;
   const ranking=(rows:Row[],key:string)=>{
     const max=rows[0]?.count||1;
-    return <ol className={styles['explore-ranking']}>{rows.map(row=><li key={row.value}><Link prefetch={false} href={href(key,row.value)} className={styles['explore-bar-link']} aria-label={`${row.label}: ${number(row.count)} ${local('companies','selskaper')} (${percent(row.count,records.length)}). ${local('Open filtered search','Åpne filtrert søk')}`}><span className={styles['explore-row-label']}>{row.label}</span><span className={styles['explore-row-value']}>{number(row.count)} <small>{percent(row.count,records.length)}</small></span><svg className={styles['explore-bar']} viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="8" rx="2" fill="currentColor" opacity=".1"/><rect width={row.count/max*100} height="8" rx="2" fill="currentColor"/></svg></Link></li>)}</ol>;
+    return <ol className={styles['explore-ranking']}>{rows.map(row=><li key={row.value}><Link prefetch={false} href={href(key,row.value)} className={styles['explore-bar-link']} aria-label={`${row.label}: ${number(row.count)} ${local('companies','selskaper')} (${percent(row.count,records.length)}). ${local('Open filtered search','Åpne filtrert søk')}`}><span className={styles['explore-row-label']}>{row.label}</span><span className={styles['explore-row-value']}>{number(row.count)} <small>{percent(row.count,records.length)}</small></span><svg className={styles['explore-bar']} viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="8" rx="2" fill="currentColor" opacity=".1"/><rect width={row.count/max*100} height="8" rx="2" fill="currentColor"/></svg><small>{local('View matching companies','Vis selskaper som passer')} →</small></Link></li>)}</ol>;
   };
   return <div className={styles['explore-page']}><header className={styles['explore-heading']}><p className="eyebrow">{local('The dataset at a glance','Datasettet i korte trekk')}</p><h1>{local('Explore','Utforsk')}</h1><p>{local('See where companies are based, what they do and which sections have data. Select a bar to explore the matching companies.','Se hvor selskapene holder til, hva de driver med og hvilke deler som har data. Velg en søyle for å se selskapene som passer.')}</p><Link href="/">{local('Back to company search','Tilbake til selskapssøk')} →</Link></header>
     {loadError?<div className={styles['explore-notice']} role="alert"><p>{local('Company records could not be loaded.','Selskapsopplysningene kunne ikke lastes.')}</p><button className="button secondary" onClick={()=>setAttempt(n=>n+1)}>{local('Try again','Prøv igjen')}</button></div>:directory===null?<div className={styles['explore-notice']} role="status" aria-live="polite">{local('Loading the company overview…','Laster selskapsoversikten…')}</div>:!records.length?<div className={styles['explore-notice']} role="status"><p>{local('No company records are available to chart.','Ingen selskapsopplysninger er tilgjengelige for diagrammene.')}</p><button className="button secondary" onClick={()=>setAttempt(n=>n+1)}>{local('Try again','Prøv igjen')}</button></div>:<>

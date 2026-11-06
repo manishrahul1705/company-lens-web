@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import {gzipSync,brotliCompressSync} from 'node:zlib';
 const root=new URL('../public/data/',import.meta.url);
 const companies=JSON.parse(fs.readFileSync(new URL('companies.json',root)));
 const facts=JSON.parse(fs.readFileSync(new URL('facts.json',root)));
@@ -6,4 +8,23 @@ fs.mkdirSync(new URL('companies/',root),{recursive:true});
 const evidenceCounts={};for(const f of facts)evidenceCounts[f.org_number]=(evidenceCounts[f.org_number]||0)+1;
 for(const c of companies)fs.writeFileSync(new URL(`companies/${c.org_number}.json`,root),JSON.stringify(c));
 const dates=facts.map(f=>f.retrieved_at).filter(Boolean).sort();
+const categories=['identity','financials','people','locations','website','social','jobs','news'];
+const states=['available','not_found','source_error','blocked'];
+const fields=['org_number','legal_name','legal_form','municipality','industry_code','industry_text','industry_text_en','employees','latest_revenue','latest_year','currency','website','jobs_count','evidence_count','sections','website_verified'];
+const dictionaries={};for(const key of ['legal_form','municipality','industry_code','industry_text','industry_text_en','currency'])dictionaries[key]=[...new Set(companies.map(c=>c[key]??''))];
+const verified=new Set(facts.filter(f=>f.category==='website'&&typeof f.proof_quote==='string'&&f.proof_quote.trim()).map(f=>f.org_number));
+const rows=companies.map(c=>fields.map(key=>key==='evidence_count'?evidenceCounts[c.org_number]||0:key==='sections'?categories.map(k=>{const i=states.indexOf(c.sections[k]);return i<0?2:i;}).join(''):key==='website_verified'?Number(verified.has(c.org_number)):dictionaries[key]?dictionaries[key].indexOf(c[key]??''):c[key]??null));
+const index={fields,dictionaries,rows};
+const indexText=JSON.stringify(index);if(Buffer.byteLength(indexText)>=250000)throw Error('Search index exceeds 250 KB');
+const version=createHash('sha256').update(JSON.stringify(companies)).update(JSON.stringify(facts)).digest('hex').slice(0,16);
+const metadata={version,companies:companies.length,facts:facts.length,websites:verified.size,gaps:companies.reduce((n,c)=>n+Object.values(c.sections).filter(s=>s!=='available').length,0),checked:dates.at(-1),evidenceCounts};
+const groups=(key)=>{const map=new Map();for(const c of companies){const value=String(c[key]||'');const row=map.get(value)||{value,label:c.industry_text||'',label_en:c.industry_text_en||'',count:0};row.count++;map.set(value,row);}return [...map.values()].sort((a,b)=>b.count-a.count||a.value.localeCompare(b.value));};
+const aggregates={total:companies.length,municipalities:groups('municipality'),industries:groups('industry_code'),coverage:categories.map(section=>({section,counts:companies.reduce((n,c)=>{n[c.sections[section]==='available'?0:c.sections[section]==='not_found'?1:2]++;return n;},[0,0,0])}))};
+const write=(name,data)=>{const body=JSON.stringify(data);fs.writeFileSync(new URL(name,root),body);fs.writeFileSync(new URL(name+'.gz',root),gzipSync(body));fs.writeFileSync(new URL(name+'.br',root),brotliCompressSync(body));};
+write('index.json',index);write('metadata.json',metadata);write('explore.json',aggregates);
+
+// Bootstrap is generated from the same index, not a second directory contract.
+fs.mkdirSync(new URL('../../lib/generated/',root),{recursive:true});
+fs.writeFileSync(new URL('../../lib/generated/directory.json',root),JSON.stringify({index,metadata}));
+console.log(JSON.stringify({version,indexDecodedBytes:Buffer.byteLength(indexText),indexGzipBytes:gzipSync(indexText).length,indexBrotliBytes:brotliCompressSync(indexText).length,companiesDecodedBytes:fs.statSync(new URL('companies.json',root)).size,factsArchiveDecodedBytes:fs.statSync(new URL('facts.json',root)).size}));
 fs.writeFileSync(new URL('summary.json',root),JSON.stringify({companies:companies.length,facts:facts.length,websites:companies.filter(c=>c.sections.website==='available'&&c.website).length,verifiedWebsites:companies.filter(c=>c.website_verified===true).length,gaps:companies.reduce((n,c)=>n+Object.values(c.sections).filter(s=>s!=='available').length,0),checked:dates.at(-1)||null,evidenceCounts}));

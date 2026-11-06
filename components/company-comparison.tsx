@@ -91,9 +91,8 @@ function MiniFinancials({company, facts, scales}: {company: Company; facts: Fact
     {!found(company, 'financials') ? <StatusBadge company={company} category="financials"/> : entries.map(({metric,fact}) => <div key={metric} style={{marginBottom:8}}>
       <div style={{fontSize:11,overflowWrap:'anywhere'}}>{t(metric === 'revenue' ? 'Revenue' : 'Annual Result')}</div>
       <div style={{fontSize:11,overflowWrap:'anywhere',fontVariantNumeric:'tabular-nums'}}>{fact ? money(fact.amount, fact.year, company.currency) : <Missing/>}{fact && <SourceButton company={company} facts={[fact]} icon/>}</div>
-      {fact && (()=>{const value=number(fact.amount)!;const {min,max}=scales[metric];const span=max-min||1;const zero=-min/span*100;return <div aria-hidden="true" style={{height:12,position:'relative',background:'var(--rule, #dde5e0)',borderRadius:2,marginTop:4}}><span style={{position:'absolute',left:`${zero}%`,top:-3,bottom:-3,width:1,background:'var(--foreground)'}}/><span style={{position:'absolute',left:`${(Math.min(value,0)-min)/span*100}%`,width:`${Math.abs(value)/span*100}%`,height:12,background:'var(--primary)',borderRadius:2}}/></div>;})()}
+      {fact && (()=>{const value=number(fact.amount)!;const {min,max}=scales[metric];const span=max-min||1;const zero=-min/span*100;return <div aria-hidden="true" style={{height:12,position:'relative',background:'var(--rule, #dde5e0)',borderRadius:2,marginTop:4}}><span className="compare-zero-baseline" style={{position:'absolute',left:`${zero}%`,top:-3,bottom:-3,width:2,zIndex:1,background:'var(--foreground)'}}/><span style={{position:'absolute',left:`${(Math.min(value,0)-min)/span*100}%`,width:`${Math.abs(value)/span*100}%`,height:12,background:'var(--primary)',borderRadius:2}}/></div>;})()}
     </div>)}
-    <p className="muted" style={{fontSize:10}}>{no ? 'Felles skala per måltall. Negative beløp til venstre for null.' : 'Shared scale per metric. Negative values extend left of zero.'}</p>
   </figure>;
 }
 
@@ -116,9 +115,10 @@ export default function CompanyComparison() {
   const shareUrl='/compare?orgs='+chosen.map(c=>c.org_number).join(',');
   const differs=(row:Row)=>new Set(chosen.map(c=>{if(!found(c,row.category))return text(c.sections[row.category]);if(row.field==='locations_count')return String(locations(c,facts).length);if(row.field==='jobs_count')return String(jobs(c,facts).length);return [text(c[row.field]),...(row.category==='financials'?[text(c.latest_year),text(c.currency)]:[])].join('|');})).size>1;
   const visibleRows = onlyDifferences ? rows.filter(differs) : rows;
-  const columns: CSSProperties = { gridTemplateColumns: `minmax(120px, .7fr) repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))` };
+  // Parent stylesheet switches this shared desktop track definition to labelled mobile values.
+  const columns = { '--compare-columns': `180px repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))` } as CSSProperties;
 
-  return <div>
+  return <div className="comparison-page" style={columns}>
     <Link className="back-link" href={backHref}><ArrowIcon direction="left"/> {t('Company Search')}</Link>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
       <div>
@@ -126,19 +126,23 @@ export default function CompanyComparison() {
         <h1 style={{ marginBottom: 8 }}>{t('Compare Companies')}</h1>
         <p className="muted" style={{ marginBottom: 0 }}>{t('The same fields. A clearer perspective.')}</p>
       </div>
-      <button className="button secondary" disabled={chosen.length>=3} onClick={openSearch}>+ {t('Add Another Company')}</button>
     </div>
 
+    <div className="compare-toolbar" role="group" aria-label={language==='no'?'Sammenligningsverktøy':'Comparison tools'}>
+      <button className="button secondary" disabled={loading||chosen.length>=3} onClick={openSearch}>+ {language==='no'?'Legg til selskap':'Add company'}</button>
+      <label className="check-filter"><input type="checkbox" disabled={loading||!chosen.length} checked={onlyDifferences} onChange={e=>setOnlyDifferences(e.target.checked)}/>{language==='no' ? 'Vis bare forskjeller' : 'Show only differences'}</label>
+      {!loading&&!error&&chosen.length>0&&<><span className="muted compare-field-count" aria-live="polite">{visibleRows.length} {language==='no' ? 'felt' : 'fields'}</span><details className="compare-utilities"><summary>{language==='no'?'Eksport og deling':'Exports & sharing'}</summary><div className="compare-utilities-content"><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/></div></details></>}
+    </div>
     {loading || error ? <DataState /> : <>
-      {chosen.length>0&&<><ExportActions companies={chosen} facts={facts} shareUrl={shareUrl}/><div style={{display:'flex',flexWrap:'wrap',gap:16,alignItems:'center',margin:'16px 0'}}><span className="muted">{t('Differences highlighted')}</span><label className="check-filter"><input type="checkbox" checked={onlyDifferences} onChange={e=>setOnlyDifferences(e.target.checked)}/>{language==='no' ? 'Vis bare forskjeller' : 'Show only differences'}</label><span className="muted text-xs" aria-live="polite">{visibleRows.length} {language==='no' ? 'felt' : 'fields'}</span></div><div ref={tabs} className="compare-tabs" style={{flexWrap:'nowrap',overflowX:'auto',maxWidth:'100%',scrollSnapType:'x proximity'}} role="group" aria-label={t('Compare Companies')}>{chosen.map(c=><button key={c.org_number} className={`button ${active===c.org_number?'selected':'secondary'}`} style={{flex:'0 0 auto',maxWidth:'80%',scrollSnapAlign:'start',minHeight:44}} aria-pressed={active===c.org_number} onClick={()=>setActiveOrg(c.org_number)}>{title(c.legal_name)||c.org_number}</button>)}</div></>}
+      {chosen.length>0&&<><div ref={tabs} className="compare-tabs" role="group" aria-label={t('Compare Companies')}>{chosen.map(c=><button key={c.org_number} className={`button ${active===c.org_number?'selected':'secondary'}`} style={{minHeight:44,overflowWrap:'anywhere'}} aria-pressed={active===c.org_number} onClick={()=>setActiveOrg(c.org_number)}>{title(c.legal_name)||c.org_number}</button>)}</div><p id="compare-scale-note" className="muted compare-scale-note">{language==='no' ? 'Finansielle diagrammer: felles skala per måltall på tvers av selskapene. Streken viser null; negative beløp går mot venstre.' : 'Financial charts: shared scale per metric across companies. The line marks zero; negative values extend left.'}</p></>}
       
       {chosen.length < 2 && <section className="empty-state" style={{ padding: '24px 20px', marginBottom: 24 }} aria-labelledby="compare-guidance">
         <h2 id="compare-guidance" style={{ fontSize: 20, marginBottom: 8 }}>{t(chosen.length ? 'Choose One More Company' : 'Choose Companies to Compare')}</h2>
         <p style={{ marginBottom: 16 }}>{t('Add at least two companies to see their details side by side.')}</p>
         <button className="button" onClick={openSearch}>{t('Find a Company')}</button>
       </section>}
-      {chosen.length > 0 && <div className={`compare-grid compare-count-${chosen.length}`} onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchCancel={()=>{touch.current=null;}} onTouchEnd={e=>{if(!touch.current||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-touch.current.x,dy=e.changedTouches[0].clientY-touch.current.y;touch.current=null;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){const index=chosen.findIndex(c=>c.org_number===active);setActiveOrg(chosen[Math.max(0,Math.min(chosen.length-1,index+(dx<0?1:-1)))].org_number);}}} role="table" aria-label={t('Company Comparison')} aria-rowcount={visibleRows.length + 1} aria-colcount={chosen.length + 1}>
-        <div className="compare-row compare-header" role="row" style={{...columns,position:'sticky',top:0,zIndex:3,background:'var(--surface, #f6f8f7)'}}> 
+      {chosen.length > 0 && <div className={`compare-grid compare-count-${chosen.length}`} onTouchStart={e=>{touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchCancel={()=>{touch.current=null;}} onTouchEnd={e=>{if(!touch.current||!e.changedTouches.length)return;const dx=e.changedTouches[0].clientX-touch.current.x,dy=e.changedTouches[0].clientY-touch.current.y;touch.current=null;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){const index=chosen.findIndex(c=>c.org_number===active);setActiveOrg(chosen[Math.max(0,Math.min(chosen.length-1,index+(dx<0?1:-1)))].org_number);}}} role="table" aria-label={t('Company Comparison')} aria-describedby="compare-scale-note" aria-rowcount={visibleRows.length + 1} aria-colcount={chosen.length + 1}>
+        <div className="compare-row compare-header" role="row"  > 
           <div className="compare-cell compare-label" role="columnheader" style={{ display: 'flex', alignItems: 'center' }}>{t('Company Details')}</div>
           {chosen.map(company => <div className={`compare-cell compare-company-column ${active===company.org_number?'is-active':''}`} role="columnheader" key={company.org_number}>
             <Link href={companyHref(company)} style={{ display: 'block', fontWeight: 600, color: 'var(--primary)', textDecoration: 'none', paddingTop: 4 }}>{title(company.legal_name) || company.org_number}</Link>
@@ -147,10 +151,10 @@ export default function CompanyComparison() {
             <MiniFinancials company={company} facts={facts} scales={scales}/>
           </div>)}
         </div>
-        {visibleRows.map(row => <div className={`compare-row ${differs(row)?'compare-different':''}`} role="row" key={row.field} style={columns}>
-          <div className="compare-cell compare-label" role="rowheader" style={{ display: 'flex', alignItems: 'center' }}>{t(row.label)}</div>
+        {visibleRows.map(row => <div className={`compare-row ${differs(row)?'compare-different':''}`} role="row" key={row.field}>
+          <div className="compare-cell compare-label" role="rowheader" style={{ display: 'flex', alignItems: 'center' }}>{t(row.label)}{differs(row)&&<span className="compare-difference-cue"><span aria-hidden="true"> ≠ </span>{language==='no'?'Ulike':'Different'}</span>}</div>
           {chosen.map(company => <div className={`compare-cell compare-company-column ${active===company.org_number?'is-active':''}`} role="cell" key={company.org_number}>
-            <Link className="compare-company-name" href={companyHref(company)}>{title(company.legal_name).split(/\s+/).slice(0, 2).join(' ') || company.org_number}</Link>
+            <Link className="compare-company-name" href={companyHref(company)}>{title(company.legal_name) || company.org_number}</Link>
             <ComparisonValue company={company} facts={facts} row={row} />
           </div>)}
         </div>)}
