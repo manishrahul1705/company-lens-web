@@ -101,4 +101,9 @@ body :is(button,a,summary){transition:background-color 180ms,color 180ms,box-sha
 .skeleton{background:linear-gradient(100deg,color-mix(in srgb,var(--primary) 7%,var(--card)) 20%,color-mix(in srgb,var(--gold) 20%,var(--card)) 45%,color-mix(in srgb,var(--primary) 7%,var(--card)) 70%);background-size:220% 100%;animation:brand-shimmer 1.8s linear infinite}@keyframes brand-shimmer{to{background-position:-220% 0}}
 @media(max-width:700px){.site-header .header-inner{flex-wrap:wrap;gap:8px;padding-block:10px}.site-header .nav-links{flex-wrap:wrap;gap:6px;max-width:100%}.site-header .brand{max-width:100%;min-width:0}.theme-toggle{padding:8px}.profile-identity-pill{max-width:100%;overflow-wrap:anywhere}.ledger-first-screen .home-search input{width:100%;min-width:0}.ledger-first-screen .search-hint{display:none}}
 @media(max-width:399px){.site-header .header-inner{align-items:flex-start}.site-header .nav-links{width:100%;justify-content:space-between}.site-header .nav-links>a{font-size:12px}.theme-toggle{font-size:11px}.profile-summary-grid{grid-template-columns:minmax(0,1fr)}}
+/* Keep headline sizing and wrapping bounded by its own hero column. */
+body .ledger-first-screen>.hero-search-column,body .ledger-first-screen>.hero-stats-column{min-width:0;max-width:100%}
+body .ledger-first-screen .ledger-hero h1{width:auto;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;font-size:clamp(2.5rem,4.5vw,4rem)}
+body .ledger-first-screen .ledger-hero h1 span{white-space:normal;max-width:100%}
+@media(min-width:641px){body .ledger-first-screen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.theme-glyph svg{transform:none!important}}
