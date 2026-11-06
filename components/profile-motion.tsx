@@ -14,17 +14,21 @@ export function CountUp({value,formatted,format}:{value:number;formatted:string;
     let frame=0;
     const motion=matchMedia('(prefers-reduced-motion: reduce)');
     const finish=()=>{cancelAnimationFrame(frame);setDisplay(formatted);};
+    // Keep static final values for reduced motion and older/embedded browsers.
+    if(motion.matches||!('IntersectionObserver' in window)){finish();return;}
+    let stopped=false;
+    const stop=()=>{stopped=true;finish();};
     const observer=new IntersectionObserver(entries=>{
       if(!entries.some(entry=>entry.isIntersecting))return;
       observer.disconnect();
-      if(motion.matches){finish();return;}
+      if(motion.matches||stopped){finish();return;}
       const start=performance.now();
-      const tick=(now:number)=>{const progress=Math.min((now-start)/850,1);setDisplay(formatter.current(value*(1-Math.pow(1-progress,3))));if(progress<1)frame=requestAnimationFrame(tick);else finish();};
+      const tick=(now:number)=>{if(stopped||motion.matches){finish();return;}const progress=Math.min((now-start)/850,1);setDisplay(formatter.current(value*(1-Math.pow(1-progress,3))));if(progress<1)frame=requestAnimationFrame(tick);else finish();};
       frame=requestAnimationFrame(tick);
     },{threshold:.25});
     observer.observe(element);
-    motion.addEventListener('change',finish);
-    return()=>{observer.disconnect();cancelAnimationFrame(frame);motion.removeEventListener('change',finish);};
+    motion.addEventListener('change',stop);
+    return()=>{observer.disconnect();cancelAnimationFrame(frame);motion.removeEventListener('change',stop);};
   },[value,formatted]);
   return <span ref={ref}><span className="sr-only">{formatted}</span><span aria-hidden="true">{display}</span></span>;
 }

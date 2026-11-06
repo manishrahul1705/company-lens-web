@@ -11,6 +11,7 @@ import {
 import { useLensData } from '@/components/lens-provider';
 import { DataState, Missing, StatusBadge } from '@/components/lens-ui';
 import styles from './company-comparison.module.css';
+import {industryGroup} from '@/lib/industry-style';
 
 type Row = { field: string; label: string; category: string; metric?: string }; 
 const rows: Row[] = [
@@ -116,7 +117,7 @@ export default function CompanyComparison() {
   const visibleRows = onlyDifferences ? rows.filter(differs) : rows;
   // Parent stylesheet switches this shared desktop track definition to labelled mobile values.
   const columns = { '--compare-columns': `200px repeat(${Math.max(chosen.length, 1)}, minmax(0, 1fr))`, '--company-count': Math.max(chosen.length,1) } as CSSProperties;
-  const colour=(index:number)=>['#527a9a','#9a7061','#658674'][index];
+  const colour=(_index:number)=>'var(--industry-accent)';
   const headlines=[rows[6],rows[8],rows[4]];
 
   return <div className={styles.page} style={columns}>
@@ -129,7 +130,7 @@ export default function CompanyComparison() {
       </div>
     </div>
 
-    {!loading&&!error&&chosen.length>0&&<div className={styles.hero}>{chosen.map((company,index)=><div className={styles.contender} key={company.org_number}>{index>0&&<span className={styles.vs}>VS</span>}<article className={styles.heroCard} style={{'--avatar-colour':colour(index)} as CSSProperties}>
+    {!loading&&!error&&chosen.length>0&&<div className={styles.hero}>{chosen.map((company,index)=><div className={styles.contender} key={company.org_number}>{index>0&&<span className={styles.vs}>VS</span>}<article className={styles.heroCard} data-industry={industryGroup(company)} style={{'--avatar-colour':colour(index)} as CSSProperties}>
       <div className={styles.band}><span className={styles.avatar}>{text(company.legal_name).slice(0,1)}</span><button className={styles.remove} aria-label={`${t('Remove')} ${title(company.legal_name)}`} onClick={()=>toggle(company.org_number)}>×</button></div>
       <div className={styles.heroBody}><Link className={styles.heroName} href={companyHref(company)}>{title(company.legal_name)||company.org_number}</Link><p className={styles.meta}>{company.org_number} · {text(company.legal_form)||'—'} · {title(company.municipality)||'—'}</p><p className={styles.industry}>{text(company.industry_text_en)||text(company.industry_text)||'—'}</p>
       <div className={styles.stats}>{headlines.map(row=>{const n=rowNumber(company,facts,row);const values=chosen.map(c=>rowNumber(c,facts,row));const winner=n!==null&&(!row.metric||new Set(chosen.map(c=>text(c.currency)||'NOK')).size===1)&&chosen.length>1&&values.every(v=>v!==null)&&values.every((v,i)=>i===index||n>v!);return <div className={styles.stat} key={row.field}><span>{t(row.label)}</span><strong>{n===null?'—':row.metric?compactMoney(n,company.currency):new Intl.NumberFormat('en-US',{notation:'compact',maximumFractionDigits:2}).format(n)}</strong><small>{text(company.latest_year)||'—'} {winner&&<span className={styles.winner}>↑ {language==='no'?'høyere':'higher'}</span>}</small></div>;})}</div></div>

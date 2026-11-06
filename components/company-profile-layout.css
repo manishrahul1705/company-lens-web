@@ -1,4 +1,9 @@
 /* Profile-only layout overrides: independent of the search-card stylesheet. */
+.company-profile-surface{--revenue-green:#087451;--trend-red:#b42335}
+.dark .company-profile-surface{--revenue-green:#72d9a6;--trend-red:#ff9baa}
+.company-profile-surface .revenue-trend{font-size:20px;color:var(--muted-foreground)}
+.company-profile-surface .revenue-trend[data-trend=up]{color:var(--revenue-green)}
+.company-profile-surface .revenue-trend[data-trend=down]{color:var(--trend-red)}
 .company-profile-surface .profile-page-nav{order:0;min-width:0}
 .company-profile-surface .profile-page-nav>div{display:flex;flex-wrap:wrap;gap:8px;max-width:100%;padding:3px}
 .company-profile-surface .profile-page-nav a{display:flex;align-items:center;min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:20px;white-space:nowrap;text-decoration:none;font-size:14px}
@@ -124,11 +129,11 @@ main>.container:has(.company-profile-surface){max-width:1200px;width:calc(100% -
 @media(max-width:359px){.company-profile-surface .profile-key-value{font-size:18px}.company-profile-surface .profile-key-figures{gap:12px;grid-template-columns:minmax(0,1fr)}.company-profile-surface .profile-sidebar-card,.company-profile-surface .coverage-bar{padding:12px}}
 
 /* Dimensional research surfaces share the shell's light/dark semantic tokens. */
-.company-profile-surface .profile-header-band{position:relative;isolation:isolate;overflow:hidden;border:1px solid var(--border);border-radius:22px;padding:36px;background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--primary) 14%,var(--card)));box-shadow:0 18px 40px #06251a0b,0 2px 5px #06251a0a}
-.company-profile-surface .profile-header-band:before{content:'';position:absolute;inset:0;z-index:-1;opacity:.14;background-image:linear-gradient(var(--primary) 1px,transparent 1px),linear-gradient(90deg,var(--primary) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(120deg,transparent,black)}
+.company-profile-surface .profile-header-band{position:relative;isolation:isolate;overflow:hidden;border:1px solid var(--border);border-radius:20px;padding:36px;background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--industry-accent,var(--primary)) 14%,var(--card)));border-top:3px solid var(--industry-accent,var(--primary));box-shadow:0 18px 40px #06251a0b,0 2px 5px #06251a0a}
+.company-profile-surface .profile-header-band:before{content:'';position:absolute;inset:0;z-index:-1;opacity:.14;background-image:linear-gradient(var(--industry-accent,var(--primary)) 1px,transparent 1px),linear-gradient(90deg,var(--industry-accent,var(--primary)) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(120deg,transparent,black)}
 .company-profile-surface .profile-sticky-header{background:none;padding:0;border:0;box-shadow:none}
 .company-profile-surface .profile-title-row h1{font-family:var(--font-editorial),Georgia,serif;font-size:clamp(30px,4vw,52px);line-height:1.1;letter-spacing:-.035em;max-width:100%}
-.company-profile-surface .profile-hero-avatar{display:flex;align-items:center;justify-content:center;width:88px;height:88px;margin-bottom:24px;border:1px solid color-mix(in srgb,var(--primary) 35%,var(--border));border-radius:22px;background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 20%,var(--card)),var(--card));box-shadow:inset 0 1px 0 #ffffff60,0 12px 22px #06251a19,0 3px 4px #06251a10;color:var(--primary);font-family:var(--font-editorial),Georgia,serif;font-size:44px;transform:rotate(-4deg)}
+.company-profile-surface .profile-hero-avatar{display:flex;align-items:center;justify-content:center;width:88px;height:88px;margin-bottom:24px;border:1px solid color-mix(in srgb,var(--industry-accent,var(--primary)) 35%,var(--border));border-radius:20px;background:var(--industry-bg,var(--card));box-shadow:inset 0 1px 0 #ffffff60,0 12px 22px #06251a19,0 3px 4px #06251a10;color:var(--industry-ink,var(--foreground));font-family:var(--font-editorial),Georgia,serif;font-size:44px}
 .company-profile-surface .profile-identity-pill{background:color-mix(in srgb,var(--card) 82%,transparent);border-color:var(--border);color:var(--foreground);max-width:100%;overflow-wrap:anywhere}
 .company-profile-surface .profile-hero-summary{font-size:16px;line-height:1.7;max-width:900px;color:var(--muted-foreground);margin:16px 0 20px;text-wrap:pretty}
 .company-profile-surface .profile-summary-grid{gap:16px}
@@ -154,7 +159,7 @@ main>.container:has(.company-profile-surface){max-width:1200px;width:calc(100% -
 .company-profile-surface .profile-chart-revenue{background:var(--primary)}
 .company-profile-surface .profile-chart-annual_result{background:var(--gold,#b49454)}
 .company-profile-surface .profile-chart-bar.profile-chart-negative{background:#cf8c83}
-.dark .company-profile-surface .profile-header-band{background:linear-gradient(115deg,#12231f,#183029);box-shadow:0 18px 40px #0003,0 2px 5px #0004}
+.dark .company-profile-surface .profile-header-band{background:linear-gradient(115deg,var(--card),color-mix(in srgb,var(--industry-accent,var(--primary)) 14%,var(--card)));box-shadow:0 18px 40px #0003,0 2px 5px #0004}
 .dark .company-profile-surface .profile-summary-grid>div,.dark .company-profile-surface .profile-key-figure{box-shadow:inset 0 1px 0 #ffffff12,0 10px 24px #0003,0 2px 5px #0004}
 @media(min-width:600px) and (max-width:1023px){.company-profile-surface .profile-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.company-profile-surface .profile-key-figures{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:599px){.company-profile-surface .profile-header-band{padding:24px 18px}.company-profile-surface .profile-hero-avatar{width:72px;height:72px;border-radius:18px;font-size:36px}.company-profile-surface .profile-summary-grid{grid-template-columns:minmax(0,1fr)}.company-profile-surface .profile-summary-grid>div{padding:18px}.company-profile-surface .profile-summary-grid dt{flex-direction:row;align-items:center}.company-profile-surface .profile-hero-summary{font-size:14px}.company-profile-surface .profile-identity-row{gap:6px}.company-profile-surface .profile-identity-pill{font-size:12px}.company-profile-surface .profile-title-row h1{font-size:32px}}
@@ -166,12 +171,12 @@ main>.container:has(.company-profile-surface){max-width:1200px;width:calc(100% -
 .company-profile-surface{--profile-result:#C9A86A;font-family:var(--font-ui),Arial,sans-serif}
 .dark .company-profile-surface{--profile-result:#D9B877}
 .company-profile-surface .ledger-section>h2{display:flex;align-items:center;gap:12px;padding-left:0;font:600 28px/1.25 var(--font-editorial),Georgia,serif}
-.company-profile-surface .ledger-section>h2>.section-icon{display:block;width:24px;height:24px;flex:0 0 24px;margin:0}
+.company-profile-surface .ledger-section>h2>.section-icon{display:block;box-sizing:content-box;width:20px;height:20px;flex:0 0 20px;padding:10px;margin:0;border-radius:50%;background:var(--industry-bg,var(--raised));color:var(--industry-ink,var(--primary))}
 .company-profile-surface .section-checked{font:400 13px/1.5 var(--font-ui),Arial,sans-serif;color:var(--muted-foreground)}
 .company-profile-surface .profile-summary-grid{align-items:stretch;grid-auto-rows:1fr}
 .company-profile-surface .profile-summary-grid>div{display:flex;flex-direction:column;justify-content:flex-start;padding:20px;min-width:0}
 .company-profile-surface .profile-summary-grid dt.small-label{display:flex;flex-direction:row;align-items:center;gap:8px;margin:0 0 12px;font:400 12px/1.4 var(--font-ui),Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-foreground)}
-.company-profile-surface .profile-summary-grid dt .profile-metric-icon{width:20px;height:20px;flex:0 0 20px}
+.company-profile-surface .profile-summary-grid dt .profile-metric-icon,.company-profile-surface .profile-key-figure .profile-metric-icon{box-sizing:content-box;width:20px;height:20px;flex:0 0 20px;padding:8px;border-radius:50%;background:var(--industry-bg,var(--raised));color:var(--industry-ink,var(--primary))}
 .company-profile-surface .profile-summary-grid dd{font:600 20px/1.3 var(--font-ui),Arial,sans-serif;letter-spacing:0;font-variant-numeric:tabular-nums;min-width:0;margin:0}
 .company-profile-surface .profile-summary-grid .profile-sourced-value{display:flex;align-items:flex-start;gap:0;min-width:0;max-width:100%}
 .company-profile-surface .profile-summary-grid .profile-source-marker{flex:0 0 44px}
